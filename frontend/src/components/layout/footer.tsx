@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -5,14 +7,29 @@ import {
   Box,
   Button,
   Container,
+  Stack,
   Typography,
 } from '@mui/material';
 
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
+import ArrowOutwardRoundedIcon from '@mui/icons-material/ArrowOutwardRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
-import ArrowOutwardRoundedIcon from '@mui/icons-material/ArrowOutwardRounded';
+import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
+import EventRoundedIcon from '@mui/icons-material/EventRounded';
+import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
-import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
+import PhotoLibraryOutlinedIcon from '@mui/icons-material/PhotoLibraryOutlined';
+import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded';
+import ReviewsOutlinedIcon from '@mui/icons-material/ReviewsOutlined';
+
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaTiktok,
+} from 'react-icons/fa';
 
 /* =========================================================
    TYPES
@@ -101,9 +118,11 @@ type FooterProps = {
    DEVELOPMENT CONTENT
 
    Later:
-   Admin Dashboard -> NestJS API -> PostgreSQL
-
-   Content can change without changing the visual system.
+   Admin Dashboard
+        ↓
+   NestJS API
+        ↓
+   PostgreSQL
 ========================================================= */
 
 const initialFooterContent: FooterContent = {
@@ -111,24 +130,26 @@ const initialFooterContent: FooterContent = {
 
   topCta: {
     enabled: true,
+
     eyebrow:
       'Dining • Events • Celebrations',
+
     title:
       'Plan your next Harmony moment.',
 
     actions: [
       {
-        id: 'reserve-table',
-        label: 'Reserve a Table',
-        href: '/reservation',
-        type: 'reservation',
-        enabled: true,
-      },
-      {
         id: 'reserve-event',
         label: 'Plan an Event',
         href: '/events#enquiry',
         type: 'event',
+        enabled: true,
+      },
+      {
+        id: 'reserve-table',
+        label: 'Reserve a Table',
+        href: '/reservation',
+        type: 'reservation',
         enabled: true,
       },
     ],
@@ -147,7 +168,7 @@ const initialFooterContent: FooterContent = {
       'DINING & EVENT CENTER',
 
     description:
-      'Thoughtful dining, warm hospitality and memorable celebrations brought together in one Harmony experience.',
+      'Thoughtful dining, warm hospitality and memorable celebrations in one Harmony experience.',
   },
 
   explore: {
@@ -230,7 +251,7 @@ const initialFooterContent: FooterContent = {
       enabled: true,
       primary: 'Opening Hours',
       secondary:
-        'Available on our contact page',
+        'Contact us for today’s hours',
     },
 
     contact: {
@@ -268,6 +289,34 @@ const initialFooterContent: FooterContent = {
 };
 
 /* =========================================================
+   SOCIAL LINKS
+========================================================= */
+
+const socialLinks = [
+  {
+    label: 'TikTok',
+    href:
+      'https://www.tiktok.com/@harmonydiningeventcenter',
+    icon: FaTiktok,
+    color: '#111111',
+  },
+  {
+    label: 'Facebook',
+    href:
+      'https://www.facebook.com/people/Harmony-Dining-Event-Center/61593063557390/',
+    icon: FaFacebookF,
+    color: '#1877F2',
+  },
+  {
+    label: 'Instagram',
+    href:
+      'https://www.instagram.com/harmonydiningandevent',
+    icon: FaInstagram,
+    color: '#E1306C',
+  },
+] as const;
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
@@ -280,6 +329,39 @@ function getVisibleLinks(
       Boolean(item.label?.trim()) &&
       Boolean(item.href?.trim()),
   );
+}
+
+function getFooterLinkIcon(
+  id: string,
+) {
+  switch (id) {
+    case 'home':
+      return HomeRoundedIcon;
+
+    case 'about':
+      return InfoOutlinedIcon;
+
+    case 'menu':
+      return RestaurantMenuRoundedIcon;
+
+    case 'events':
+      return EventRoundedIcon;
+
+    case 'gallery':
+      return PhotoLibraryOutlinedIcon;
+
+    case 'offers':
+      return LocalOfferOutlinedIcon;
+
+    case 'reviews':
+      return ReviewsOutlinedIcon;
+
+    case 'contact':
+      return ContactSupportOutlinedIcon;
+
+    default:
+      return ArrowOutwardRoundedIcon;
+  }
 }
 
 /* =========================================================
@@ -317,81 +399,8 @@ export default function Footer({
       content.legal?.links,
     );
 
-  const showBrand =
-    Boolean(
-      content.brand?.logoSrc?.trim(),
-    ) ||
-    Boolean(
-      content.brand?.name?.trim(),
-    ) ||
-    Boolean(
-      content.brand?.subtitle?.trim(),
-    ) ||
-    Boolean(
-      content.brand?.description?.trim(),
-    );
-
-  const showExplore =
-    content.explore?.enabled !==
-      false &&
-    (Boolean(
-      content.explore?.title?.trim(),
-    ) ||
-      exploreLinks.length > 0);
-
-  const showExperience =
-    content.experience?.enabled !==
-      false &&
-    (Boolean(
-      content.experience?.title?.trim(),
-    ) ||
-      experienceLinks.length > 0);
-
-  const showLocation =
-    content.visit?.location
-      ?.enabled !== false &&
-    Boolean(
-      content.visit?.location
-        ?.primary?.trim() ||
-        content.visit?.location
-          ?.secondary?.trim(),
-    );
-
-  const showHours =
-    content.visit?.hours
-      ?.enabled !== false &&
-    Boolean(
-      content.visit?.hours
-        ?.primary?.trim() ||
-        content.visit?.hours
-          ?.secondary?.trim(),
-    );
-
-  const showContact =
-    content.visit?.contact
-      ?.enabled !== false &&
-    Boolean(
-      content.visit?.contact
-        ?.label?.trim(),
-    ) &&
-    Boolean(
-      content.visit?.contact
-        ?.href?.trim(),
-    );
-
-  const showVisit =
-    content.visit?.enabled !==
-      false &&
-    (Boolean(
-      content.visit?.title?.trim(),
-    ) ||
-      showLocation ||
-      showHours ||
-      showContact);
-
   const copyrightName =
-    content.legal
-      ?.copyrightName?.trim() ||
+    content.legal?.copyrightName?.trim() ||
     'Harmony Dining & Event Center';
 
   return (
@@ -401,58 +410,53 @@ export default function Footer({
         bgcolor:
           'background.default',
 
-        color: 'text.primary',
+        color:
+          'text.primary',
 
-        borderTop: '1px solid',
-        borderColor: 'divider',
+        borderTop:
+          '1px solid',
 
-        transition:
-          'background-color 220ms ease, color 220ms ease, border-color 220ms ease',
-
-        '@media (prefers-reduced-motion: reduce)': {
-          transition: 'none',
-        },
+        borderColor:
+          'divider',
       }}
     >
       <Container maxWidth="xl">
-        {/* =================================================
-            TOP CTA
-        ================================================== */}
 
-        {content.topCta
-          ?.enabled !== false &&
+        {/* =====================================================
+            TOP CTA
+        ===================================================== */}
+
+        {content.topCta?.enabled !==
+          false &&
           (Boolean(
-            content.topCta
-              ?.eyebrow?.trim(),
+            content.topCta?.title?.trim(),
           ) ||
             Boolean(
-              content.topCta
-                ?.title?.trim(),
+              content.topCta?.eyebrow?.trim(),
             ) ||
-            topActions.length >
-              0) && (
+            topActions.length > 0) && (
             <Box
               sx={{
                 py: {
-                  xs: 3.5,
-                  sm: 4,
-                  md: 4.5,
+                  xs: 2.25,
+                  sm: 2.75,
+                  md: 3.5,
                 },
 
                 display: 'grid',
 
-                gridTemplateColumns:
-                  {
-                    xs: '1fr',
-                    md: 'minmax(0,1fr) auto',
-                  },
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  md:
+                    'minmax(0,1fr) auto',
+                },
 
                 alignItems:
                   'center',
 
                 gap: {
-                  xs: 2.2,
-                  md: 4,
+                  xs: 1.4,
+                  md: 3,
                 },
 
                 borderBottom:
@@ -462,24 +466,17 @@ export default function Footer({
                   'divider',
               }}
             >
-              <Box
-                sx={{
-                  minWidth: 0,
-                }}
-              >
+              <Box>
                 {content.topCta
                   ?.eyebrow && (
                   <Typography
                     variant="overline"
+                    component="p"
                     sx={{
-                      display:
-                        'block',
+                      m: 0,
 
                       color:
                         'secondary.dark',
-
-                      overflowWrap:
-                        'break-word',
                     }}
                   >
                     {
@@ -493,21 +490,16 @@ export default function Footer({
                   ?.title && (
                   <Typography
                     component="h2"
-                    variant="h3"
+                    variant="h4"
                     sx={{
                       mt: content
                         .topCta
                         ?.eyebrow
-                        ? 0.7
+                        ? 0.35
                         : 0,
 
-                      maxWidth: 650,
-
-                      color:
-                        'text.primary',
-
-                      overflowWrap:
-                        'break-word',
+                      maxWidth:
+                        600,
                     }}
                   >
                     {
@@ -520,171 +512,106 @@ export default function Footer({
 
               {topActions.length >
                 0 && (
-                <Box
+                <Stack
+                  direction="row"
                   sx={{
-                    display:
-                      'flex',
-
-                    flexDirection:
-                      {
-                        xs: 'column',
-                        sm: 'row',
-                      },
+                    flexWrap:
+                      'wrap',
 
                     gap: 1,
-
-                    minWidth: 0,
                   }}
                 >
                   {topActions.map(
                     (action) => {
-                      const isReservation =
+                      const isEvent =
                         action.type ===
-                        'reservation';
+                        'event';
 
                       return (
-                        <Box
+                        <Link
                           key={
                             action.id
                           }
-                          sx={{
-                            width: {
-                              xs: '100%',
-                              sm: 'auto',
-                            },
-
-                            minWidth: 0,
+                          href={
+                            action.href
+                          }
+                          style={{
+                            textDecoration:
+                              'none',
                           }}
                         >
-                          <Link
-                            href={
-                              action.href
+                          <Button
+                            variant={
+                              isEvent
+                                ? 'contained'
+                                : 'outlined'
                             }
-                            style={{
-                              display:
-                                'block',
+                            disableElevation
+                            startIcon={
+                              isEvent ? (
+                                <CelebrationRoundedIcon />
+                              ) : (
+                                <CalendarMonthRoundedIcon />
+                              )
+                            }
+                            sx={{
+                              minHeight:
+                                42,
 
-                              width:
-                                '100%',
+                              px: {
+                                xs: 1.4,
+                                sm: 2,
+                              },
 
-                              textDecoration:
-                                'none',
+                              fontWeight:
+                                700,
+
+                              whiteSpace:
+                                'nowrap',
                             }}
                           >
-                            <Button
-                              fullWidth
-                              variant={
-                                isReservation
-                                  ? 'contained'
-                                  : 'outlined'
-                              }
-                              startIcon={
-                                isReservation ? (
-                                  <CalendarMonthRoundedIcon
-                                    aria-hidden
-                                    sx={{
-                                      fontSize:
-                                        '19px !important',
-                                    }}
-                                  />
-                                ) : (
-                                  <CelebrationRoundedIcon
-                                    aria-hidden
-                                    sx={{
-                                      fontSize:
-                                        '19px !important',
-                                    }}
-                                  />
-                                )
-                              }
-                              sx={{
-                                minHeight:
-                                  46,
-
-                                px: 2.2,
-
-                                bgcolor:
-                                  isReservation
-                                    ? 'secondary.main'
-                                    : 'transparent',
-
-                                color:
-                                  isReservation
-                                    ? 'secondary.contrastText'
-                                    : 'text.primary',
-
-                                borderColor:
-                                  !isReservation
-                                    ? 'divider'
-                                    : undefined,
-
-                                fontWeight:
-                                  700,
-
-                                whiteSpace:
-                                  {
-                                    xs: 'normal',
-                                    sm: 'nowrap',
-                                  },
-
-                                overflowWrap:
-                                  'break-word',
-
-                                '&:hover':
-                                  isReservation
-                                    ? {
-                                        bgcolor:
-                                          'secondary.light',
-                                      }
-                                    : {
-                                        borderColor:
-                                          'secondary.main',
-
-                                        bgcolor:
-                                          'action.hover',
-                                      },
-                              }}
-                            >
-                              {
-                                action.label
-                              }
-                            </Button>
-                          </Link>
-                        </Box>
+                            {
+                              action.label
+                            }
+                          </Button>
+                        </Link>
                       );
                     },
                   )}
-                </Box>
+                </Stack>
               )}
             </Box>
           )}
 
-        {/* =================================================
+        {/* =====================================================
             MAIN FOOTER
-        ================================================== */}
+        ===================================================== */}
 
         <Box
           sx={{
             py: {
-              xs: 4.5,
-              md: 5,
+              xs: 2.75,
+              md: 4,
             },
 
             display: 'grid',
 
-            gridTemplateColumns:
-              {
-                xs: '1fr',
+            gridTemplateColumns: {
+              xs:
+                'repeat(2, minmax(0, 1fr))',
 
-                sm: 'minmax(0,1.3fr) minmax(130px,0.65fr) minmax(130px,0.65fr)',
+              md:
+                'minmax(260px,1.4fr) minmax(130px,0.6fr) minmax(130px,0.6fr) minmax(250px,0.9fr)',
+            },
 
-                lg: 'minmax(300px,1.45fr) minmax(140px,0.55fr) minmax(140px,0.55fr) minmax(260px,0.9fr)',
-              },
+            columnGap: {
+              xs: 1.6,
+              md: 4,
+            },
 
-            gap: {
-              xs: 3.8,
-              sm: 3.5,
-              lg: 5,
+            rowGap: {
+              xs: 2.4,
+              md: 3,
             },
 
             alignItems:
@@ -693,499 +620,227 @@ export default function Footer({
         >
           {/* =================================================
               BRAND
-          ================================================== */}
+          ================================================= */}
 
-          {showBrand && (
-            <Box
-              sx={{
-                maxWidth: 380,
-                minWidth: 0,
+          <Box
+            sx={{
+              gridColumn: {
+                xs: '1 / -1',
+                md: 'auto',
+              },
+
+              maxWidth: 390,
+
+              minWidth: 0,
+            }}
+          >
+            <Link
+              href="/"
+              aria-label="Harmony Dining & Event Center home"
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
               }}
             >
-              {(content.brand
-                ?.logoSrc ||
-                content.brand
-                  ?.name ||
-                content.brand
-                  ?.subtitle) && (
-                <Link
-                  href="/"
-                  aria-label="Harmony Dining & Event Center home"
-                  style={{
-                    width:
-                      'fit-content',
-
-                    maxWidth:
-                      '100%',
-
-                    display:
-                      'block',
-
-                    textDecoration:
-                      'none',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display:
-                        'flex',
-
-                      alignItems:
-                        'center',
-
-                      gap: 1.25,
-
-                      minWidth: 0,
-                    }}
-                  >
-                    {content.brand
-                      ?.logoSrc && (
-                      <Box
-                        sx={{
-                          position:
-                            'relative',
-
-                          width: 58,
-
-                          height: 58,
-
-                          flexShrink:
-                            0,
-
-                          overflow:
-                            'hidden',
-
-                          borderRadius:
-                            1,
-
-                          border:
-                            '1px solid',
-
-                          borderColor:
-                            'divider',
-
-                          bgcolor:
-                            'background.paper',
-                        }}
-                      >
-                        <Image
-                          src={
-                            content
-                              .brand
-                              .logoSrc
-                          }
-                          alt={
-                            content
-                              .brand
-                              .logoAlt ??
-                            ''
-                          }
-                          fill
-                          sizes="58px"
-                          style={{
-                            objectFit:
-                              'cover',
-                          }}
-                        />
-                      </Box>
-                    )}
-
-                    <Box
-                      sx={{
-                        minWidth: 0,
-                      }}
-                    >
-                      {content.brand
-                        ?.name && (
-                        <Typography
-                          variant="subtitle1"
-                          sx={{
-                            color:
-                              'secondary.dark',
-
-                            fontWeight:
-                              800,
-
-                            letterSpacing:
-                              '0.035em',
-
-                            lineHeight:
-                              1,
-
-                            overflowWrap:
-                              'break-word',
-                          }}
-                        >
-                          {
-                            content
-                              .brand
-                              .name
-                          }
-                        </Typography>
-                      )}
-
-                      {content.brand
-                        ?.subtitle && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            display:
-                              'block',
-
-                            mt: content
-                              .brand
-                              ?.name
-                              ? 0.4
-                              : 0,
-
-                            color:
-                              'text.secondary',
-
-                            fontWeight:
-                              700,
-
-                            letterSpacing:
-                              '0.07em',
-
-                            overflowWrap:
-                              'break-word',
-                          }}
-                        >
-                          {
-                            content
-                              .brand
-                              .subtitle
-                          }
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                </Link>
-              )}
-
-              {content.brand
-                ?.description && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    mt: 1.8,
-
-                    maxWidth: 350,
-
-                    color:
-                      'text.secondary',
-
-                    overflowWrap:
-                      'break-word',
-                  }}
-                >
-                  {
-                    content.brand
-                      .description
-                  }
-                </Typography>
-              )}
-            </Box>
-          )}
-
-          {/* =================================================
-              EXPLORE
-          ================================================== */}
-
-          {showExplore && (
-            <Box
-              sx={{
-                minWidth: 0,
-              }}
-            >
-              {content.explore
-                ?.title && (
-                <Typography
-                  variant="overline"
-                  sx={{
-                    display:
-                      'block',
-
-                    color:
-                      'secondary.dark',
-
-                    overflowWrap:
-                      'break-word',
-                  }}
-                >
-                  {
-                    content.explore
-                      .title
-                  }
-                </Typography>
-              )}
-
-              {exploreLinks.length >
-                0 && (
-                <Box
-                  component="nav"
-                  aria-label="Footer explore navigation"
-                  sx={{
-                    mt: content
-                      .explore
-                      ?.title
-                      ? 1.5
-                      : 0,
-
-                    display:
-                      'grid',
-
-                    gap: 0.9,
-                  }}
-                >
-                  {exploreLinks.map(
-                    (item) => (
-                      <Link
-                        key={
-                          item.id
-                        }
-                        href={
-                          item.href
-                        }
-                        style={{
-                          width:
-                            'fit-content',
-
-                          maxWidth:
-                            '100%',
-
-                          textDecoration:
-                            'none',
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color:
-                              'text.secondary',
-
-                            fontWeight:
-                              600,
-
-                            overflowWrap:
-                              'break-word',
-
-                            transition:
-                              'color 180ms ease',
-
-                            '&:hover':
-                              {
-                                color:
-                                  'text.primary',
-                              },
-
-                            '@media (prefers-reduced-motion: reduce)':
-                              {
-                                transition:
-                                  'none',
-                              },
-                          }}
-                        >
-                          {
-                            item.label
-                          }
-                        </Typography>
-                      </Link>
-                    ),
-                  )}
-                </Box>
-              )}
-            </Box>
-          )}
-
-          {/* =================================================
-              EXPERIENCE
-          ================================================== */}
-
-          {showExperience && (
-            <Box
-              sx={{
-                minWidth: 0,
-              }}
-            >
-              {content.experience
-                ?.title && (
-                <Typography
-                  variant="overline"
-                  sx={{
-                    display:
-                      'block',
-
-                    color:
-                      'secondary.dark',
-
-                    overflowWrap:
-                      'break-word',
-                  }}
-                >
-                  {
-                    content
-                      .experience
-                      .title
-                  }
-                </Typography>
-              )}
-
-              {experienceLinks.length >
-                0 && (
-                <Box
-                  component="nav"
-                  aria-label="Footer experience navigation"
-                  sx={{
-                    mt: content
-                      .experience
-                      ?.title
-                      ? 1.5
-                      : 0,
-
-                    display:
-                      'grid',
-
-                    gap: 0.9,
-                  }}
-                >
-                  {experienceLinks.map(
-                    (item) => (
-                      <Link
-                        key={
-                          item.id
-                        }
-                        href={
-                          item.href
-                        }
-                        style={{
-                          width:
-                            'fit-content',
-
-                          maxWidth:
-                            '100%',
-
-                          textDecoration:
-                            'none',
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color:
-                              'text.secondary',
-
-                            fontWeight:
-                              600,
-
-                            overflowWrap:
-                              'break-word',
-
-                            transition:
-                              'color 180ms ease',
-
-                            '&:hover':
-                              {
-                                color:
-                                  'text.primary',
-                              },
-
-                            '@media (prefers-reduced-motion: reduce)':
-                              {
-                                transition:
-                                  'none',
-                              },
-                          }}
-                        >
-                          {
-                            item.label
-                          }
-                        </Typography>
-                      </Link>
-                    ),
-                  )}
-                </Box>
-              )}
-            </Box>
-          )}
-
-          {/* =================================================
-              VISIT
-          ================================================== */}
-
-          {showVisit && (
-            <Box
-              sx={{
-                gridColumn: {
-                  xs: 'auto',
-                  sm: '1 / -1',
-                  lg: 'auto',
-                },
-
-                minWidth: 0,
-              }}
-            >
-              {content.visit
-                ?.title && (
-                <Typography
-                  variant="overline"
-                  sx={{
-                    display:
-                      'block',
-
-                    color:
-                      'secondary.dark',
-
-                    overflowWrap:
-                      'break-word',
-                  }}
-                >
-                  {
-                    content.visit
-                      .title
-                  }
-                </Typography>
-              )}
-
               <Box
                 sx={{
-                  mt: content
-                    .visit
-                    ?.title
-                    ? 1.5
-                    : 0,
+                  display: 'flex',
 
-                  display:
-                    'grid',
+                  alignItems:
+                    'center',
 
-                  gap: 1.3,
+                  gap: 1,
 
-                  maxWidth: 330,
+                  minWidth: 0,
                 }}
               >
-                {/* LOCATION */}
-
-                {showLocation && (
+                {content.brand
+                  ?.logoSrc && (
                   <Box
                     sx={{
-                      display:
-                        'grid',
+                      position:
+                        'relative',
 
-                      gridTemplateColumns:
-                        '36px minmax(0,1fr)',
+                      width: {
+                        xs: 46,
+                        md: 54,
+                      },
 
-                      gap: 1,
+                      height: {
+                        xs: 46,
+                        md: 54,
+                      },
 
-                      alignItems:
-                        'center',
+                      flexShrink: 0,
+
+                      overflow:
+                        'hidden',
+
+                      borderRadius: 1,
+
+                      border:
+                        '1px solid',
+
+                      borderColor:
+                        'divider',
+
+                      bgcolor:
+                        'background.paper',
                     }}
                   >
-                    <Box
-                      aria-hidden
-                      sx={{
-                        width: 36,
+                    <Image
+                      src={
+                        content.brand
+                          .logoSrc
+                      }
+                      alt={
+                        content.brand
+                          .logoAlt ??
+                        ''
+                      }
+                      fill
+                      sizes="54px"
+                      style={{
+                        objectFit:
+                          'cover',
+                      }}
+                    />
+                  </Box>
+                )}
 
-                        height: 36,
+                <Box
+                  sx={{
+                    minWidth: 0,
+                  }}
+                >
+                  {content.brand
+                    ?.name && (
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color:
+                          'primary.main',
+
+                        fontWeight:
+                          800,
+
+                        lineHeight: 1,
+
+                        letterSpacing:
+                          '0.035em',
+                      }}
+                    >
+                      {
+                        content.brand
+                          .name
+                      }
+                    </Typography>
+                  )}
+
+                  {content.brand
+                    ?.subtitle && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display:
+                          'block',
+
+                        mt: 0.35,
+
+                        color:
+                          'text.secondary',
+
+                        fontWeight:
+                          700,
+
+                        letterSpacing:
+                          '0.06em',
+                      }}
+                    >
+                      {
+                        content.brand
+                          .subtitle
+                      }
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            </Link>
+
+            {content.brand
+              ?.description && (
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1.2,
+
+                  maxWidth:
+                    350,
+
+                  color:
+                    'text.secondary',
+
+                  lineHeight:
+                    1.6,
+                }}
+              >
+                {
+                  content.brand
+                    .description
+                }
+              </Typography>
+            )}
+
+            {/* =================================================
+                SOCIAL MEDIA
+            ================================================= */}
+
+            <Box
+              sx={{
+                mt: 1.75,
+              }}
+            >
+              <Typography
+                variant="overline"
+                component="p"
+                sx={{
+                  m: 0,
+
+                  color:
+                    'secondary.dark',
+                }}
+              >
+                Follow Harmony
+              </Typography>
+
+              <Stack
+                direction="row"
+                sx={{
+                  mt: 0.7,
+
+                  gap: 0.7,
+
+                  flexWrap:
+                    'wrap',
+                }}
+              >
+                {socialLinks.map(
+                  ({
+                    label,
+                    href,
+                    icon: Icon,
+                    color,
+                  }) => (
+                    <Box
+                      key={label}
+                      component="a"
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Visit Harmony on ${label}`}
+                      sx={{
+                        width: 38,
+                        height: 38,
 
                         display:
                           'grid',
@@ -1197,175 +852,495 @@ export default function Footer({
                           '50%',
 
                         bgcolor:
-                          'action.hover',
+                          'background.paper',
 
-                        color:
-                          'secondary.dark',
+                        color,
+
+                        border:
+                          '1px solid',
+
+                        borderColor:
+                          'divider',
+
+                        boxShadow: 1,
+
+                        textDecoration:
+                          'none',
+
+                        transition:
+                          'transform 160ms ease, border-color 160ms ease',
+
+                        '&:hover':
+                          {
+                            transform:
+                              'translateY(-2px)',
+
+                            borderColor:
+                              'secondary.main',
+                          },
+
+                        '@media (prefers-reduced-motion: reduce)':
+                          {
+                            transition:
+                              'none',
+
+                            '&:hover':
+                              {
+                                transform:
+                                  'none',
+                              },
+                          },
                       }}
                     >
-                      <LocationOnRoundedIcon
-                        sx={{
-                          fontSize:
-                            18,
-                        }}
+                      <Icon
+                        size={17}
+                        aria-hidden
                       />
                     </Box>
+                  ),
+                )}
+              </Stack>
+            </Box>
+          </Box>
 
+          {/* =================================================
+              EXPLORE
+          ================================================= */}
+
+          <Box
+            sx={{
+              minWidth: 0,
+            }}
+          >
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{
+                m: 0,
+
+                color:
+                  'secondary.dark',
+              }}
+            >
+              {content.explore
+                ?.title ??
+                'Explore'}
+            </Typography>
+
+            <Stack
+              sx={{
+                mt: 0.8,
+
+                gap: {
+                  xs: 0.25,
+                  md: 0.55,
+                },
+              }}
+            >
+              {exploreLinks.map(
+                (item) => {
+                  const Icon =
+                    getFooterLinkIcon(
+                      item.id,
+                    );
+
+                  return (
+                    <Link
+                      key={
+                        item.id
+                      }
+                      href={
+                        item.href
+                      }
+                      style={{
+                        color:
+                          'inherit',
+
+                        textDecoration:
+                          'none',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display:
+                            'flex',
+
+                          alignItems:
+                            'center',
+
+                          gap: 0.65,
+
+                          minHeight:
+                            32,
+
+                          color:
+                            'text.secondary',
+
+                          transition:
+                            'color 160ms ease',
+
+                          '&:hover':
+                            {
+                              color:
+                                'text.primary',
+                            },
+
+                          '@media (prefers-reduced-motion: reduce)':
+                            {
+                              transition:
+                                'none',
+                            },
+                        }}
+                      >
+                        <Icon
+                          aria-hidden
+                          sx={{
+                            fontSize:
+                              16,
+
+                            color:
+                              'secondary.dark',
+
+                            flexShrink:
+                              0,
+                          }}
+                        />
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight:
+                              600,
+                          }}
+                        >
+                          {
+                            item.label
+                          }
+                        </Typography>
+                      </Box>
+                    </Link>
+                  );
+                },
+              )}
+            </Stack>
+          </Box>
+
+          {/* =================================================
+              EXPERIENCE
+          ================================================= */}
+
+          <Box
+            sx={{
+              minWidth: 0,
+            }}
+          >
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{
+                m: 0,
+
+                color:
+                  'secondary.dark',
+              }}
+            >
+              {content.experience
+                ?.title ??
+                'Experience'}
+            </Typography>
+
+            <Stack
+              sx={{
+                mt: 0.8,
+
+                gap: {
+                  xs: 0.25,
+                  md: 0.55,
+                },
+              }}
+            >
+              {experienceLinks.map(
+                (item) => {
+                  const Icon =
+                    getFooterLinkIcon(
+                      item.id,
+                    );
+
+                  return (
+                    <Link
+                      key={
+                        item.id
+                      }
+                      href={
+                        item.href
+                      }
+                      style={{
+                        color:
+                          'inherit',
+
+                        textDecoration:
+                          'none',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display:
+                            'flex',
+
+                          alignItems:
+                            'center',
+
+                          gap: 0.65,
+
+                          minHeight:
+                            32,
+
+                          color:
+                            'text.secondary',
+
+                          transition:
+                            'color 160ms ease',
+
+                          '&:hover':
+                            {
+                              color:
+                                'text.primary',
+                            },
+
+                          '@media (prefers-reduced-motion: reduce)':
+                            {
+                              transition:
+                                'none',
+                            },
+                        }}
+                      >
+                        <Icon
+                          aria-hidden
+                          sx={{
+                            fontSize:
+                              16,
+
+                            color:
+                              'secondary.dark',
+
+                            flexShrink:
+                              0,
+                          }}
+                        />
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight:
+                              600,
+                          }}
+                        >
+                          {
+                            item.label
+                          }
+                        </Typography>
+                      </Box>
+                    </Link>
+                  );
+                },
+              )}
+            </Stack>
+          </Box>
+
+          {/* =================================================
+              VISIT HARMONY
+          ================================================= */}
+
+          <Box
+            sx={{
+              gridColumn: {
+                xs: '1 / -1',
+                md: 'auto',
+              },
+
+              minWidth: 0,
+            }}
+          >
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{
+                m: 0,
+
+                color:
+                  'secondary.dark',
+              }}
+            >
+              {content.visit
+                ?.title ??
+                'Visit Harmony'}
+            </Typography>
+
+            <Box
+              sx={{
+                mt: 0.8,
+
+                display: 'grid',
+
+                gridTemplateColumns: {
+                  xs:
+                    'repeat(2, minmax(0,1fr))',
+
+                  md: '1fr',
+                },
+
+                gap: {
+                  xs: 1,
+                  md: 1.1,
+                },
+              }}
+            >
+              {/* LOCATION */}
+
+              {content.visit
+                ?.location
+                ?.enabled !==
+                false &&
+                Boolean(
+                  content.visit
+                    ?.location
+                    ?.primary,
+                ) && (
+                  <Link
+                    href={
+                      content.visit
+                        ?.location
+                        ?.href ??
+                      '/#location'
+                    }
+                    style={{
+                      color:
+                        'inherit',
+
+                      textDecoration:
+                        'none',
+                    }}
+                  >
                     <Box
                       sx={{
+                        display:
+                          'flex',
+
+                        gap: 0.75,
+
+                        alignItems:
+                          'center',
+
                         minWidth: 0,
                       }}
                     >
-                      {content.visit
-                        ?.location
-                        ?.href ? (
-                        <Link
-                          href={
-                            content
-                              .visit
-                              .location
-                              .href
-                          }
-                          style={{
-                            color:
-                              'inherit',
+                      <Box
+                        aria-hidden
+                        sx={{
+                          width: 34,
+                          height: 34,
 
-                            textDecoration:
-                              'none',
+                          flexShrink:
+                            0,
+
+                          display:
+                            'grid',
+
+                          placeItems:
+                            'center',
+
+                          borderRadius:
+                            '50%',
+
+                          bgcolor:
+                            'action.hover',
+
+                          color:
+                            'secondary.dark',
+                        }}
+                      >
+                        <LocationOnRoundedIcon
+                          sx={{
+                            fontSize:
+                              18,
+                          }}
+                        />
+                      </Box>
+
+                      <Box
+                        sx={{
+                          minWidth: 0,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display:
+                              'block',
+
+                            color:
+                              'text.primary',
+
+                            fontWeight:
+                              700,
                           }}
                         >
-                          {content
-                            .visit
-                            .location
-                            .primary && (
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                color:
-                                  'text.primary',
+                          {
+                            content
+                              .visit
+                              ?.location
+                              ?.primary
+                          }
+                        </Typography>
 
-                                overflowWrap:
-                                  'break-word',
-                              }}
-                            >
-                              {
-                                content
-                                  .visit
-                                  .location
-                                  .primary
-                              }
-                            </Typography>
-                          )}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display:
+                              'block',
 
-                          {content
-                            .visit
-                            .location
-                            .secondary && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                display:
-                                  'block',
-
-                                mt: 0.1,
-
-                                color:
-                                  'text.secondary',
-
-                                overflowWrap:
-                                  'break-word',
-                              }}
-                            >
-                              {
-                                content
-                                  .visit
-                                  .location
-                                  .secondary
-                              }
-                            </Typography>
-                          )}
-                        </Link>
-                      ) : (
-                        <>
-                          {content
-                            .visit
-                            ?.location
-                            ?.primary && (
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                color:
-                                  'text.primary',
-
-                                overflowWrap:
-                                  'break-word',
-                              }}
-                            >
-                              {
-                                content
-                                  .visit
-                                  .location
-                                  .primary
-                              }
-                            </Typography>
-                          )}
-
-                          {content
-                            .visit
-                            ?.location
-                            ?.secondary && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                display:
-                                  'block',
-
-                                mt: 0.1,
-
-                                color:
-                                  'text.secondary',
-
-                                overflowWrap:
-                                  'break-word',
-                              }}
-                            >
-                              {
-                                content
-                                  .visit
-                                  .location
-                                  .secondary
-                              }
-                            </Typography>
-                          )}
-                        </>
-                      )}
+                            color:
+                              'text.secondary',
+                          }}
+                        >
+                          Directions
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
+                  </Link>
                 )}
 
-                {/* HOURS */}
+              {/* HOURS */}
 
-                {showHours && (
+              {content.visit
+                ?.hours?.enabled !==
+                false &&
+                Boolean(
+                  content.visit
+                    ?.hours
+                    ?.primary,
+                ) && (
                   <Box
                     sx={{
                       display:
-                        'grid',
+                        'flex',
 
-                      gridTemplateColumns:
-                        '36px minmax(0,1fr)',
-
-                      gap: 1,
+                      gap: 0.75,
 
                       alignItems:
                         'center',
+
+                      minWidth: 0,
                     }}
                   >
                     <Box
                       aria-hidden
                       sx={{
-                        width: 36,
+                        width: 34,
+                        height: 34,
 
-                        height: 36,
+                        flexShrink:
+                          0,
 
                         display:
                           'grid',
@@ -1385,8 +1360,7 @@ export default function Footer({
                     >
                       <AccessTimeRoundedIcon
                         sx={{
-                          fontSize:
-                            18,
+                          fontSize: 18,
                         }}
                       />
                     </Box>
@@ -1396,129 +1370,116 @@ export default function Footer({
                         minWidth: 0,
                       }}
                     >
-                      {content.visit
-                        ?.hours
-                        ?.primary && (
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            color:
-                              'text.primary',
-
-                            overflowWrap:
-                              'break-word',
-                          }}
-                        >
-                          {
-                            content
-                              .visit
-                              .hours
-                              .primary
-                          }
-                        </Typography>
-                      )}
-
-                      {content.visit
-                        ?.hours
-                        ?.secondary && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            display:
-                              'block',
-
-                            mt: 0.1,
-
-                            color:
-                              'text.secondary',
-
-                            overflowWrap:
-                              'break-word',
-                          }}
-                        >
-                          {
-                            content
-                              .visit
-                              .hours
-                              .secondary
-                          }
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                )}
-
-                {/* CONTACT */}
-
-                {showContact && (
-                  <Link
-                    href={
-                      content.visit
-                        ?.contact
-                        ?.href ?? '#'
-                    }
-                    style={{
-                      width:
-                        'fit-content',
-
-                      maxWidth:
-                        '100%',
-
-                      textDecoration:
-                        'none',
-                    }}
-                  >
-                    <Button
-                      variant="text"
-                      endIcon={
-                        <ArrowOutwardRoundedIcon
-                          aria-hidden
-                        />
-                      }
-                      sx={{
-                        minHeight:
-                          'auto',
-
-                        p: 0,
-
-                        justifyContent:
-                          'flex-start',
-
-                        color:
-                          'secondary.dark',
-
-                        fontWeight:
-                          700,
-
-                        '&:hover': {
-                          bgcolor:
-                            'transparent',
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display:
+                            'block',
 
                           color:
                             'text.primary',
-                        },
-                      }}
-                    >
-                      {
-                        content.visit
-                          ?.contact
-                          ?.label
-                      }
-                    </Button>
-                  </Link>
+
+                          fontWeight:
+                            700,
+                        }}
+                      >
+                        {
+                          content
+                            .visit
+                            ?.hours
+                            ?.primary
+                        }
+                      </Typography>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display:
+                            'block',
+
+                          color:
+                            'text.secondary',
+                        }}
+                      >
+                        Contact us
+                      </Typography>
+                    </Box>
+                  </Box>
                 )}
-              </Box>
             </Box>
-          )}
+
+            {/* CONTACT */}
+
+            {content.visit
+              ?.contact?.enabled !==
+              false &&
+              content.visit
+                ?.contact?.href &&
+              content.visit
+                ?.contact?.label && (
+                <Link
+                  href={
+                    content.visit
+                      .contact
+                      .href
+                  }
+                  style={{
+                    display:
+                      'inline-flex',
+
+                    marginTop: 10,
+
+                    textDecoration:
+                      'none',
+                  }}
+                >
+                  <Button
+                    variant="text"
+                    endIcon={
+                      <ArrowOutwardRoundedIcon />
+                    }
+                    sx={{
+                      p: 0,
+
+                      minHeight:
+                        'auto',
+
+                      color:
+                        'secondary.dark',
+
+                      fontWeight:
+                        700,
+
+                      '&:hover': {
+                        bgcolor:
+                          'transparent',
+
+                        color:
+                          'text.primary',
+                      },
+                    }}
+                  >
+                    {
+                      content.visit
+                        .contact
+                        .label
+                    }
+                  </Button>
+                </Link>
+              )}
+          </Box>
         </Box>
 
-        {/* =================================================
-            BOTTOM
-        ================================================== */}
+        {/* =====================================================
+            BOTTOM LEGAL
+        ===================================================== */}
 
         <Box
           sx={{
-            py: 2,
+            py: {
+              xs: 1.5,
+              md: 1.8,
+            },
 
             display: 'flex',
 
@@ -1531,11 +1492,11 @@ export default function Footer({
               'space-between',
 
             alignItems: {
-              xs: 'flex-start',
+              xs: 'center',
               sm: 'center',
             },
 
-            gap: 1.2,
+            gap: 0.9,
 
             borderTop:
               '1px solid',
@@ -1550,33 +1511,34 @@ export default function Footer({
               color:
                 'text.secondary',
 
-              opacity: 0.72,
+              textAlign: {
+                xs: 'center',
+                sm: 'left',
+              },
 
-              overflowWrap:
-                'break-word',
+              opacity: 0.8,
             }}
           >
             ©{' '}
             {new Date().getFullYear()}{' '}
-            {copyrightName}. All
-            rights reserved.
+            {copyrightName}. All rights
+            reserved.
           </Typography>
 
           {legalLinks.length >
             0 && (
-            <Box
-              component="nav"
-              aria-label="Legal navigation"
+            <Stack
+              direction="row"
               sx={{
-                display:
-                  'flex',
-
                 flexWrap:
                   'wrap',
 
+                justifyContent:
+                  'center',
+
                 gap: {
-                  xs: 1.4,
-                  sm: 2,
+                  xs: 1.2,
+                  sm: 1.6,
                 },
               }}
             >
@@ -1600,11 +1562,10 @@ export default function Footer({
                         color:
                           'text.secondary',
 
-                        opacity:
-                          0.72,
+                        opacity: 0.8,
 
                         transition:
-                          'color 180ms ease, opacity 180ms ease',
+                          'color 160ms ease, opacity 160ms ease',
 
                         '&:hover':
                           {
@@ -1629,7 +1590,7 @@ export default function Footer({
                   </Link>
                 ),
               )}
-            </Box>
+            </Stack>
           )}
         </Box>
       </Container>

@@ -12,6 +12,7 @@ import Footer from '@/components/layout/footer';
 import Navbar from '@/components/layout/navbar';
 import SitePromoOverlay from '@/components/promotions/site-promo-overlay';
 import ThemeRegistry from '@/theme/theme-provider';
+import SocialFloatingBar from '@/components/layout/social-floating-bar';
 
 /* =========================================================
    FONTS
@@ -69,7 +70,7 @@ export default function RootLayout({
             <SitePromoOverlay />
 
             <Navbar />
-
+<SocialFloatingBar />
             {children}
 
             <Footer />
