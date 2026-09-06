@@ -8,7 +8,6 @@ import {
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
 
-import { CartProvider } from '@/components/cart/cart-provider';
 import Footer from '@/components/layout/footer';
 import Navbar from '@/components/layout/navbar';
 import SitePromoOverlay from '@/components/promotions/site-promo-overlay';
@@ -66,7 +65,6 @@ export default function RootLayout({
     >
       <body>
         <ThemeRegistry>
-          <CartProvider>
             {/* GLOBAL FIRST-VISIT PROMOTIONAL OVERLAY */}
             <SitePromoOverlay />
 
@@ -75,7 +73,7 @@ export default function RootLayout({
             {children}
 
             <Footer />
-          </CartProvider>
+          
         </ThemeRegistry>
       </body>
     </html>

@@ -15,7 +15,6 @@ import {
   Dialog,
   DialogContent,
   IconButton,
-  Stack,
   Typography,
 } from '@mui/material';
 
@@ -23,13 +22,24 @@ import { alpha } from '@mui/material/styles';
 
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
-import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
-import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 
 /* =========================================================
    TYPES
+
+   HARMONY-REAL
+
+   Future production flow:
+
+   Admin Dashboard
+        ↓
+   NestJS API
+        ↓
+   GET /offers/public/active
+        ↓
+   SitePromoOverlay
+
+   Admin controls content.
+   Frontend controls visual design.
 ========================================================= */
 
 type PromoCta = {
@@ -60,6 +70,11 @@ export type SitePromoContent = {
   imageAlt?: string;
   imagePosition?: string;
 
+  /*
+   * Kept in the type for future/admin compatibility.
+   * This lighter overlay intentionally does not render
+   * feature/highlight rows.
+   */
   highlights?: string[];
 
   primaryCta?: PromoCta;
@@ -77,29 +92,7 @@ type SitePromoOverlayProps = {
 /* =========================================================
    DEVELOPMENT CONTENT
 
-   Later:
-   Admin Dashboard
-        ↓
-   NestJS API
-        ↓
-   GET /offers/public/active
-        ↓
-   This component receives `content`
-
-   Admin can change:
-   - enabled
-   - start/end date
-   - title/description
-   - image
-   - button labels/routes
-   - highlights
-   - note
-
-   Admin must NOT control:
-   - global colors
-   - typography system
-   - component layout
-   - theme
+   Later this can come from NestJS / Admin.
 ========================================================= */
 
 const initialPromoContent: SitePromoContent = {
@@ -110,23 +103,21 @@ const initialPromoContent: SitePromoContent = {
   startAt: null,
   endAt: null,
 
-  eyebrow: 'Harmony Signature Experience',
+  eyebrow: 'Harmony Special',
 
-  badge: 'Limited Harmony Special',
+  badge: 'Limited Offer',
 
   title: 'A little extra',
-
-  accentTitle:
-    'for your next moment.',
+  accentTitle: 'for your next visit.',
 
   description:
-    'Discover a curated Harmony experience created for memorable dining, celebrations and time well spent together.',
+    'Discover our current Harmony special for dining and celebrations.',
 
   image:
     '/images/menu/harmony-food-menu-bg.jpg',
 
   imageAlt:
-    'Harmony signature dining experience',
+    'Harmony dining special',
 
   imagePosition: 'center',
 
@@ -138,7 +129,7 @@ const initialPromoContent: SitePromoContent = {
 
   primaryCta: {
     id: 'explore-offer',
-    label: 'Explore the Offer',
+    label: 'Explore Offer',
     href: '/menu',
     enabled: true,
     variant: 'primary',
@@ -146,14 +137,14 @@ const initialPromoContent: SitePromoContent = {
 
   secondaryCta: {
     id: 'continue-site',
-    label: 'Continue to Website',
+    label: 'Maybe later',
     href: '/',
     enabled: true,
     variant: 'secondary',
   },
 
   note:
-    'Offer availability and final details are confirmed by Harmony staff.',
+    'Offer details and availability are confirmed by Harmony staff.',
 
   frequency: 'session',
 };
@@ -241,27 +232,21 @@ export default function SitePromoOverlay({
       }
     } catch {
       /*
-       * Storage may be blocked.
-       * The promotion can still open.
+       * sessionStorage can be unavailable
+       * in restricted/private environments.
+       * Promo should still be allowed to open.
        */
     }
 
     const timer =
       window.setTimeout(() => {
         setOpen(true);
-      }, 180);
+      }, 450);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [
-    active,
-    storageKey,
-  ]);
-
-  /* =======================================================
-     ACTIONS
-  ======================================================= */
+  }, [active, storageKey]);
 
   function markSeen() {
     try {
@@ -271,8 +256,8 @@ export default function SitePromoOverlay({
       );
     } catch {
       /*
-       * Storage may be blocked.
-       * Closing/navigation should still work.
+       * Storage failure must never stop
+       * the visitor from closing the dialog.
        */
     }
   }
@@ -282,23 +267,16 @@ export default function SitePromoOverlay({
     setOpen(false);
   }
 
-  /* =======================================================
-     CONTENT STATE
-  ======================================================= */
-
   if (!active) {
     return null;
   }
 
-  const highlights = (
-    content.highlights ?? []
-  )
-    .map((item) => item.trim())
-    .filter(Boolean);
+  /* =======================================================
+     CTA VISIBILITY
+  ======================================================= */
 
   const showPrimary =
-    content.primaryCta?.enabled !==
-      false &&
+    content.primaryCta?.enabled !== false &&
     Boolean(
       content.primaryCta?.label?.trim(),
     ) &&
@@ -311,34 +289,19 @@ export default function SitePromoOverlay({
       false &&
     Boolean(
       content.secondaryCta?.label?.trim(),
-    ) &&
-    Boolean(
-      content.secondaryCta?.href?.trim(),
     );
-
-  const hasTitle = Boolean(
-    content.title?.trim() ||
-      content.accentTitle?.trim(),
-  );
 
   const hasDescription = Boolean(
     content.description?.trim(),
   );
 
-  /* =======================================================
-     RENDER
-  ======================================================= */
-
   return (
     <Dialog
       open={open}
       onClose={handleClose}
-      fullScreen
-      aria-labelledby={
-        hasTitle
-          ? 'site-promo-title'
-          : undefined
-      }
+      fullWidth
+      maxWidth="md"
+      aria-labelledby="site-promo-title"
       aria-describedby={
         hasDescription
           ? 'site-promo-description'
@@ -349,641 +312,305 @@ export default function SitePromoOverlay({
           sx: {
             bgcolor: (theme) =>
               alpha(
-                theme.palette.primary
-                  .dark,
-                0.92,
+                theme.palette.common
+                  .black,
+                0.5,
               ),
 
             backdropFilter:
-              'blur(14px)',
+              'blur(4px)',
 
             WebkitBackdropFilter:
-              'blur(14px)',
+              'blur(4px)',
           },
         },
 
         paper: {
           sx: {
-            bgcolor:
-              'transparent',
-
-            backgroundImage:
-              'none',
-
-            boxShadow: 'none',
-
-            display: 'grid',
-
-            placeItems:
-              'center',
-
-            overflowY: 'auto',
-
-            p: {
-              xs: 1.25,
-              sm: 2.5,
-              md: 3,
+            m: {
+              xs: 1.5,
+              sm: 3,
             },
+
+            width: {
+              xs:
+                'calc(100% - 24px)',
+              sm:
+                'calc(100% - 48px)',
+            },
+
+            maxHeight:
+              'calc(100dvh - 32px)',
+
+            overflow: 'hidden',
+
+            bgcolor:
+              'background.paper',
+
+            backgroundImage: 'none',
+
+            border: '1px solid',
+
+            borderColor: 'divider',
+
+            borderRadius: {
+              xs: 1.5,
+              sm: 2,
+            },
+
+            boxShadow: (theme) =>
+              theme.shadows[16],
           },
         },
       }}
     >
       <DialogContent
         sx={{
-          position: 'relative',
-
-          width: '100%',
-
-          maxWidth: 1120,
-
           p: 0,
 
-          overflow: 'hidden',
+          overflowY: 'auto',
 
           bgcolor:
-            'primary.dark',
+            'background.paper',
 
-          color:
-            'primary.contrastText',
-
-          border:
-            '1px solid',
-
-          borderColor:
-            (theme) =>
-              alpha(
-                theme.palette.secondary
-                  .main,
-                0.3,
-              ),
-
-          borderRadius: {
-            xs: 2,
-            sm: 3,
-            md: 4,
-          },
-
-          boxShadow: (theme) =>
-            theme.shadows[24],
-
-          isolation: 'isolate',
-
-          '@media (prefers-reduced-motion: no-preference)':
-            {
-              animation:
-                'harmonyPromoEnter 480ms cubic-bezier(0.22, 1, 0.36, 1) both',
-
-              '@keyframes harmonyPromoEnter':
-                {
-                  from: {
-                    opacity: 0,
-
-                    transform:
-                      'translateY(20px) scale(0.985)',
-                  },
-
-                  to: {
-                    opacity: 1,
-
-                    transform:
-                      'translateY(0) scale(1)',
-                  },
-                },
-            },
+          color: 'text.primary',
         }}
       >
-        {/* =================================================
-            DECORATIVE THEME SURFACE
-        ================================================== */}
-
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute',
-
-            inset: 0,
-
-            zIndex: -1,
-
-            pointerEvents:
-              'none',
-
-            background: (theme) => `
-              radial-gradient(
-                circle at 88% 10%,
-                ${alpha(
-                  theme.palette.secondary
-                    .main,
-                  0.16,
-                )},
-                transparent 34%
-              ),
-              radial-gradient(
-                circle at 14% 95%,
-                ${alpha(
-                  theme.palette.primary
-                    .light,
-                  0.28,
-                )},
-                transparent 36%
-              )
-            `,
-          }}
-        />
-
         <Box
           sx={{
             display: 'grid',
 
-            gridTemplateColumns:
-              {
-                xs: '1fr',
-
-                md:
-                  'minmax(0,1.08fr) minmax(0,0.92fr)',
-              },
+            gridTemplateColumns: {
+              xs: '1fr',
+              md:
+                'minmax(0, 0.9fr) minmax(0, 1.1fr)',
+            },
 
             minHeight: {
-              md: 620,
+              md: 470,
             },
           }}
         >
           {/* =================================================
-              IMAGE PANEL
-          ================================================== */}
+              IMAGE
 
-          <Box
-            sx={{
-              position: 'relative',
+              No frame.
+              No floating badge.
+              No lower marketing copy.
+              No decorative blobs.
+          ================================================= */}
 
-              minHeight: {
-                xs: 285,
-                sm: 380,
-                md: 620,
-              },
+          {content.image ? (
+            <Box
+              sx={{
+                position: 'relative',
 
-              overflow:
-                'hidden',
+                minHeight: {
+                  xs: 210,
+                  sm: 270,
+                  md: 470,
+                },
 
-              bgcolor:
-                'primary.main',
-            }}
-          >
-            {content.image && (
+                overflow: 'hidden',
+
+                bgcolor:
+                  'action.hover',
+              }}
+            >
               <Image
                 src={content.image}
                 alt={
-                  content.imageAlt ??
-                  ''
+                  content.imageAlt ?? ''
                 }
                 fill
-                priority
-                quality={75}
-                sizes="(max-width: 899px) 100vw, 610px"
+                priority={false}
+                quality={80}
+                sizes="(max-width: 899px) 100vw, 400px"
                 style={{
-                  objectFit:
-                    'cover',
+                  objectFit: 'cover',
 
                   objectPosition:
                     content.imagePosition ??
                     'center',
                 }}
               />
-            )}
 
-            {/* Image contrast overlay */}
+              {/* Subtle readability layer only */}
 
-            <Box
-              aria-hidden
-              sx={{
-                position:
-                  'absolute',
+              <Box
+                aria-hidden
+                sx={{
+                  position: 'absolute',
 
-                inset: 0,
+                  inset: 0,
 
-                background:
-                  (theme) => `
-                    linear-gradient(
+                  background: (theme) =>
+                    `linear-gradient(
                       180deg,
-                      ${alpha(
-                        theme.palette.primary
-                          .dark,
-                        0.04,
-                      )} 0%,
-                      ${alpha(
-                        theme.palette.primary
-                          .dark,
-                        0.14,
-                      )} 48%,
-                      ${alpha(
-                        theme.palette.primary
-                          .dark,
-                        0.94,
-                      )} 100%
-                    ),
-                    linear-gradient(
-                      90deg,
-                      ${alpha(
-                        theme.palette.primary
-                          .dark,
-                        0.14,
-                      )} 0%,
                       transparent 55%,
                       ${alpha(
-                        theme.palette.primary
-                          .dark,
-                        0.18,
+                        theme.palette
+                          .primary.dark,
+                        0.22,
                       )} 100%
-                    )
-                  `,
-              }}
-            />
+                    )`,
 
-            {/* Theme frame */}
-
-            <Box
-              aria-hidden
-              sx={{
-                position:
-                  'absolute',
-
-                inset: {
-                  xs: 12,
-                  sm: 16,
-                  md: 20,
-                },
-
-                border:
-                  '1px solid',
-
-                borderColor:
-                  (theme) =>
-                    alpha(
-                      theme.palette
-                        .secondary
-                        .main,
-                      0.3,
-                    ),
-
-                borderRadius: 2,
-
-                pointerEvents:
-                  'none',
-              }}
-            />
-
-            {/* =================================================
-                OFFER BADGE
-            ================================================== */}
-
-            {content.badge && (
-              <Box
-                sx={{
-                  position:
-                    'absolute',
-
-                  top: {
-                    xs: 20,
-                    sm: 28,
-                    md: 34,
-                  },
-
-                  left: {
-                    xs: 20,
-                    sm: 28,
-                    md: 34,
-                  },
-
-                  maxWidth:
-                    'calc(100% - 90px)',
-
-                  display:
-                    'inline-flex',
-
-                  alignItems:
-                    'center',
-
-                  gap: 0.8,
-
-                  px: 1.35,
-
-                  py: 0.8,
-
-                  borderRadius:
-                    999,
-
-                  bgcolor:
-                    (theme) =>
-                      alpha(
-                        theme.palette
-                          .primary
-                          .dark,
-                        0.78,
-                      ),
-
-                  color:
-                    'secondary.light',
-
-                  border:
-                    '1px solid',
-
-                  borderColor:
-                    (theme) =>
-                      alpha(
-                        theme.palette
-                          .secondary
-                          .main,
-                        0.4,
-                      ),
-
-                  backdropFilter:
-                    'blur(12px)',
-
-                  WebkitBackdropFilter:
-                    'blur(12px)',
-
-                  boxShadow:
-                    (theme) =>
-                      theme.shadows[6],
+                  pointerEvents: 'none',
                 }}
-              >
-                <AutoAwesomeRoundedIcon
-                  aria-hidden
-                  sx={{
-                    fontSize: 17,
-                  }}
-                />
-
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color:
-                      'inherit',
-
-                    lineHeight:
-                      1.2,
-
-                    overflowWrap:
-                      'break-word',
-                  }}
-                >
-                  {
-                    content.badge
-                  }
-                </Typography>
-              </Box>
-            )}
-
-            {/* =================================================
-                IMAGE LOWER MESSAGE
-            ================================================== */}
-
-            <Box
-              sx={{
-                position:
-                  'absolute',
-
-                left: {
-                  xs: 24,
-                  sm: 32,
-                  md: 38,
-                },
-
-                right: {
-                  xs: 24,
-                  sm: 32,
-                  md: 38,
-                },
-
-                bottom: {
-                  xs: 24,
-                  sm: 32,
-                  md: 38,
-                },
-              }}
-            >
-              <Typography
-                variant="overline"
-                sx={{
-                  maxWidth: 420,
-
-                  display:
-                    'block',
-
-                  color:
-                    (theme) =>
-                      alpha(
-                        theme.palette
-                          .primary
-                          .contrastText,
-                        0.76,
-                      ),
-                }}
-              >
-                Dining • Events •
-                Celebration
-              </Typography>
-
-              <Typography
-                component="p"
-                variant="h4"
-                sx={{
-                  mt: 0.9,
-
-                  maxWidth: 430,
-
-                  color:
-                    'primary.contrastText',
-
-                  overflowWrap:
-                    'break-word',
-                }}
-              >
-                Make the moment feel a
-                little more special.
-              </Typography>
+              />
             </Box>
-          </Box>
+          ) : null}
 
           {/* =================================================
-              CONTENT PANEL
-          ================================================== */}
+              CONTENT
+          ================================================= */}
 
           <Box
             sx={{
               position: 'relative',
 
               display: 'flex',
-
-              flexDirection:
-                'column',
-
-              justifyContent:
-                'center',
+              flexDirection: 'column',
+              justifyContent: 'center',
 
               minWidth: 0,
 
-              p: {
-                xs: 2.7,
+              px: {
+                xs: 2.5,
                 sm: 4,
                 md: 5,
-                lg: 5.5,
               },
 
-              bgcolor:
-                (theme) =>
-                  alpha(
-                    theme.palette
-                      .primary.dark,
-                    0.88,
-                  ),
+              py: {
+                xs: 3,
+                sm: 4,
+                md: 5,
+              },
             }}
           >
-            {/* =================================================
-                CLOSE
-            ================================================== */}
+            {/* CLOSE */}
 
             <IconButton
               type="button"
               aria-label="Close promotional offer"
-              onClick={
-                handleClose
-              }
+              onClick={handleClose}
               sx={{
-                position:
-                  'absolute',
+                position: 'absolute',
 
                 top: {
-                  xs: 14,
-                  sm: 18,
+                  xs: 10,
+                  sm: 14,
                 },
 
                 right: {
-                  xs: 14,
-                  sm: 18,
+                  xs: 10,
+                  sm: 14,
                 },
 
-                width: 42,
-
-                height: 42,
+                width: 40,
+                height: 40,
 
                 color:
-                  'primary.contrastText',
+                  'text.secondary',
 
-                bgcolor:
-                  (theme) =>
-                    alpha(
-                      theme.palette
-                        .primary
-                        .contrastText,
-                      0.06,
-                    ),
-
-                border:
-                  '1px solid',
-
-                borderColor:
-                  (theme) =>
-                    alpha(
-                      theme.palette
-                        .primary
-                        .contrastText,
-                      0.12,
-                    ),
-
-                backdropFilter:
-                  'blur(12px)',
-
-                WebkitBackdropFilter:
-                  'blur(12px)',
+                borderRadius: 1,
 
                 '&:hover': {
                   bgcolor:
-                    (theme) =>
-                      alpha(
-                        theme.palette
-                          .primary
-                          .contrastText,
-                        0.12,
-                      ),
+                    'action.hover',
 
                   color:
-                    'primary.contrastText',
+                    'text.primary',
                 },
               }}
             >
-              <CloseRoundedIcon />
+              <CloseRoundedIcon
+                sx={{
+                  fontSize: 21,
+                }}
+              />
             </IconButton>
 
-            {/* =================================================
-                EYEBROW
-            ================================================== */}
+            {/* BADGE */}
 
-            {content.eyebrow && (
+            {content.badge ? (
               <Box
                 sx={{
-                  display:
-                    'flex',
+                  width: 'fit-content',
 
-                  alignItems:
-                    'center',
+                  mb: 2,
 
-                  gap: 1.1,
+                  px: 1.2,
+                  py: 0.55,
 
-                  pr: 6,
+                  border: '1px solid',
 
-                  minWidth: 0,
+                  borderColor:
+                    'secondary.main',
+
+                  borderRadius: 1,
+
+                  color:
+                    'secondary.dark',
+
+                  bgcolor: (theme) =>
+                    alpha(
+                      theme.palette
+                        .secondary.main,
+                      0.08,
+                    ),
                 }}
               >
-                <Box
-                  aria-hidden
-                  sx={{
-                    width: 28,
-
-                    height: 1,
-
-                    bgcolor:
-                      'secondary.light',
-
-                    flexShrink: 0,
-                  }}
-                />
-
                 <Typography
-                  variant="overline"
+                  variant="caption"
+                  component="span"
                   sx={{
-                    color:
-                      'secondary.light',
+                    display: 'block',
 
-                    overflowWrap:
-                      'break-word',
+                    fontWeight: 800,
+
+                    lineHeight: 1.2,
+
+                    letterSpacing:
+                      '0.06em',
+
+                    textTransform:
+                      'uppercase',
                   }}
                 >
-                  {
-                    content.eyebrow
-                  }
+                  {content.badge}
                 </Typography>
               </Box>
-            )}
+            ) : content.eyebrow ? (
+              <Typography
+                variant="overline"
+                component="p"
+                sx={{
+                  m: 0,
 
-            {/* =================================================
-                TITLE
-            ================================================== */}
+                  mb: 1.5,
 
-            {hasTitle && (
+                  color:
+                    'secondary.dark',
+                }}
+              >
+                {content.eyebrow}
+              </Typography>
+            ) : null}
+
+            {/* TITLE */}
+
+            {(content.title ||
+              content.accentTitle) ? (
               <Typography
                 id="site-promo-title"
                 component="h2"
-                variant="h2"
+                variant="h3"
                 sx={{
-                  mt: content.eyebrow
-                    ? 1.6
-                    : 0,
-
-                  maxWidth: 500,
+                  maxWidth: 440,
 
                   color:
-                    'primary.contrastText',
+                    'text.primary',
 
                   overflowWrap:
                     'break-word',
@@ -991,408 +618,173 @@ export default function SitePromoOverlay({
               >
                 {content.title}
 
-                {content.accentTitle && (
+                {content.accentTitle ? (
                   <Box
                     component="span"
                     sx={{
-                      display:
-                        'block',
+                      display: 'block',
 
                       color:
-                        'secondary.light',
+                        'secondary.dark',
                     }}
                   >
                     {
                       content.accentTitle
                     }
                   </Box>
-                )}
+                ) : null}
               </Typography>
-            )}
+            ) : null}
 
-            {/* =================================================
-                DESCRIPTION
-            ================================================== */}
+            {/* DESCRIPTION */}
 
-            {content.description && (
+            {hasDescription ? (
               <Typography
                 id="site-promo-description"
+                component="p"
                 variant="body1"
                 sx={{
-                  mt: 2.1,
-
-                  maxWidth: 455,
-
-                  color:
-                    (theme) =>
-                      alpha(
-                        theme.palette
-                          .primary
-                          .contrastText,
-                        0.72,
-                      ),
-
-                  overflowWrap:
-                    'break-word',
-                }}
-              >
-                {
-                  content.description
-                }
-              </Typography>
-            )}
-
-            {/* =================================================
-                HIGHLIGHTS
-            ================================================== */}
-
-            {highlights.length >
-              0 && (
-              <Stack
-                sx={{
-                  mt: 2.35,
-
-                  gap: 1,
-                }}
-              >
-                {highlights.map(
-                  (
-                    highlight,
-                    index,
-                  ) => {
-                    const Icon =
-                      index % 2 ===
-                      0
-                        ? RestaurantRoundedIcon
-                        : CelebrationRoundedIcon;
-
-                    return (
-                      <Box
-                        key={`${highlight}-${index}`}
-                        sx={{
-                          display:
-                            'grid',
-
-                          gridTemplateColumns:
-                            '32px minmax(0,1fr)',
-
-                          gap: 1,
-
-                          alignItems:
-                            'center',
-                        }}
-                      >
-                        <Box
-                          aria-hidden
-                          sx={{
-                            width: 32,
-
-                            height: 32,
-
-                            display:
-                              'grid',
-
-                            placeItems:
-                              'center',
-
-                            borderRadius:
-                              '50%',
-
-                            color:
-                              'secondary.light',
-
-                            bgcolor:
-                              (
-                                theme,
-                              ) =>
-                                alpha(
-                                  theme
-                                    .palette
-                                    .secondary
-                                    .main,
-                                  0.1,
-                                ),
-
-                            border:
-                              '1px solid',
-
-                            borderColor:
-                              (
-                                theme,
-                              ) =>
-                                alpha(
-                                  theme
-                                    .palette
-                                    .secondary
-                                    .main,
-                                  0.2,
-                                ),
-                          }}
-                        >
-                          <Icon
-                            sx={{
-                              fontSize:
-                                16,
-                            }}
-                          />
-                        </Box>
-
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color:
-                              (
-                                theme,
-                              ) =>
-                                alpha(
-                                  theme
-                                    .palette
-                                    .primary
-                                    .contrastText,
-                                  0.86,
-                                ),
-
-                            fontWeight:
-                              700,
-
-                            overflowWrap:
-                              'break-word',
-                          }}
-                        >
-                          {
-                            highlight
-                          }
-                        </Typography>
-                      </Box>
-                    );
-                  },
-                )}
-              </Stack>
-            )}
-
-            {/* =================================================
-                ACTIONS
-            ================================================== */}
-
-            {(showPrimary ||
-              showSecondary) && (
-              <Stack
-                direction={{
-                  xs: 'column',
-
-                  sm: 'row',
-                }}
-                sx={{
-                  mt: 3.1,
-
-                  gap: 1.1,
-
-                  alignItems: {
-                    xs: 'stretch',
-
-                    sm: 'center',
-                  },
-                }}
-              >
-                {/* PRIMARY CTA */}
-
-                {showPrimary &&
-                  content.primaryCta && (
-                    <Box
-                      sx={{
-                        width: {
-                          xs: '100%',
-                          sm: 'auto',
-                        },
-                      }}
-                    >
-                      <Link
-                        href={
-                          content
-                            .primaryCta
-                            .href
-                        }
-                        onClick={
-                          handleClose
-                        }
-                        style={{
-                          display:
-                            'block',
-
-                          width:
-                            '100%',
-
-                          textDecoration:
-                            'none',
-                        }}
-                      >
-                        <Button
-                          fullWidth
-                          variant="contained"
-                          startIcon={
-                            <LocalOfferRoundedIcon />
-                          }
-                          endIcon={
-                            <ArrowForwardRoundedIcon />
-                          }
-                          sx={{
-                            minHeight:
-                              52,
-
-                            px: 2.6,
-
-                            bgcolor:
-                              'secondary.main',
-
-                            color:
-                              'secondary.contrastText',
-
-                            whiteSpace:
-                              {
-                                xs: 'normal',
-
-                                sm: 'nowrap',
-                              },
-
-                            '&:hover':
-                              {
-                                bgcolor:
-                                  'secondary.light',
-                              },
-                          }}
-                        >
-                          {
-                            content
-                              .primaryCta
-                              .label
-                          }
-                        </Button>
-                      </Link>
-                    </Box>
-                  )}
-
-                {/* SECONDARY CTA */}
-
-                {showSecondary &&
-                  content.secondaryCta && (
-                    <Box
-                      sx={{
-                        width: {
-                          xs: '100%',
-                          sm: 'auto',
-                        },
-                      }}
-                    >
-                      <Link
-                        href={
-                          content
-                            .secondaryCta
-                            .href
-                        }
-                        onClick={
-                          handleClose
-                        }
-                        style={{
-                          display:
-                            'block',
-
-                          width:
-                            '100%',
-
-                          textDecoration:
-                            'none',
-                        }}
-                      >
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          sx={{
-                            minHeight:
-                              52,
-
-                            px: 2.4,
-
-                            color:
-                              'primary.contrastText',
-
-                            borderColor:
-                              (
-                                theme,
-                              ) =>
-                                alpha(
-                                  theme
-                                    .palette
-                                    .primary
-                                    .contrastText,
-                                  0.22,
-                                ),
-
-                            whiteSpace:
-                              {
-                                xs: 'normal',
-
-                                sm: 'nowrap',
-                              },
-
-                            '&:hover':
-                              {
-                                borderColor:
-                                  'secondary.main',
-
-                                bgcolor:
-                                  (
-                                    theme,
-                                  ) =>
-                                    alpha(
-                                      theme
-                                        .palette
-                                        .primary
-                                        .contrastText,
-                                      0.06,
-                                    ),
-                              },
-                          }}
-                        >
-                          {
-                            content
-                              .secondaryCta
-                              .label
-                          }
-                        </Button>
-                      </Link>
-                    </Box>
-                  )}
-              </Stack>
-            )}
-
-            {/* =================================================
-                NOTE
-            ================================================== */}
-
-            {content.note && (
-              <Typography
-                variant="caption"
-                sx={{
-                  mt: 1.8,
+                  mt: 2,
 
                   maxWidth: 430,
 
                   color:
-                    (theme) =>
-                      alpha(
-                        theme.palette
-                          .primary
-                          .contrastText,
-                        0.5,
-                      ),
+                    'text.secondary',
+
+                  lineHeight: 1.7,
 
                   overflowWrap:
                     'break-word',
                 }}
               >
+                {content.description}
+              </Typography>
+            ) : null}
+
+            {/* =================================================
+                ACTIONS
+
+                One obvious primary CTA.
+                Secondary action stays quiet.
+            ================================================= */}
+
+            {(showPrimary ||
+              showSecondary) ? (
+              <Box
+                sx={{
+                  mt: 3,
+                }}
+              >
+                {showPrimary &&
+                content.primaryCta ? (
+                  <Link
+                    href={
+                      content.primaryCta
+                        .href
+                    }
+                    onClick={handleClose}
+                    style={{
+                      display:
+                        'inline-flex',
+
+                      textDecoration:
+                        'none',
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      disableElevation
+                      endIcon={
+                        <ArrowForwardRoundedIcon />
+                      }
+                      sx={{
+                        minHeight: 48,
+
+                        px: 2.5,
+
+                        bgcolor:
+                          'primary.main',
+
+                        color:
+                          'primary.contrastText',
+
+                        fontWeight: 700,
+
+                        '&:hover': {
+                          bgcolor:
+                            'primary.dark',
+                        },
+                      }}
+                    >
+                      {
+                        content.primaryCta
+                          .label
+                      }
+                    </Button>
+                  </Link>
+                ) : null}
+
+                {showSecondary &&
+                content.secondaryCta ? (
+                  <Button
+                    type="button"
+                    variant="text"
+                    onClick={handleClose}
+                    sx={{
+                      minHeight: 48,
+
+                      ml: {
+                        xs: 0.5,
+                        sm: 1,
+                      },
+
+                      px: 1.5,
+
+                      color:
+                        'text.secondary',
+
+                      fontWeight: 600,
+
+                      '&:hover': {
+                        bgcolor:
+                          'action.hover',
+
+                        color:
+                          'text.primary',
+                      },
+                    }}
+                  >
+                    {
+                      content.secondaryCta
+                        .label
+                    }
+                  </Button>
+                ) : null}
+              </Box>
+            ) : null}
+
+            {/* NOTE */}
+
+            {content.note ? (
+              <Typography
+                variant="caption"
+                component="p"
+                sx={{
+                  mt: 2,
+
+                  mb: 0,
+
+                  maxWidth: 420,
+
+                  color:
+                    'text.secondary',
+
+                  lineHeight: 1.55,
+                }}
+              >
                 {content.note}
               </Typography>
-            )}
+            ) : null}
           </Box>
         </Box>
       </DialogContent>
