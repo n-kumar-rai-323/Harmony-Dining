@@ -19,6 +19,7 @@ import { MediaModule } from './media/media.module';
 import { GalleryModule } from './gallery/gallery.module';
 import { EventsModule } from './events/events.module';
 import { ReservationsModule } from './reservations/reservations.module';
+import { EnquiriesModule } from './enquiries/enquiries.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -86,6 +87,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     GalleryModule,
     EventsModule,
     ReservationsModule,
+    EnquiriesModule,
   ],
   controllers: [AppController],
   providers: [
