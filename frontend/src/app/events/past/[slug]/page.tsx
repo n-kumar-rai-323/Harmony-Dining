@@ -20,7 +20,7 @@ import PastEventGallery from '@/components/events/past-event-gallery';
 import {
   getPastEventBySlug,
   getPastEventSlugs,
-} from '@/data/past-events';
+} from '@/lib/api/events';
 
 import { formatLongDate } from '@/lib/date';
 
@@ -28,12 +28,13 @@ type PageParams = {
   params: Promise<{ slug: string }>;
 };
 
-export const dynamicParams = false;
+// New events published later render on first request, then cache.
+export const dynamicParams = true;
+export const revalidate = 300;
 
-export function generateStaticParams() {
-  return getPastEventSlugs().map((slug) => ({
-    slug,
-  }));
+export async function generateStaticParams() {
+  const slugs = await getPastEventSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -41,7 +42,7 @@ export async function generateMetadata({
 }: PageParams): Promise<Metadata> {
   const { slug } = await params;
 
-  const event = getPastEventBySlug(slug);
+  const event = await getPastEventBySlug(slug);
 
   if (!event) {
     return { title: 'Past Event' };
@@ -70,7 +71,7 @@ export default async function PastEventPage({
 }: PageParams) {
   const { slug } = await params;
 
-  const event = getPastEventBySlug(slug);
+  const event = await getPastEventBySlug(slug);
 
   if (!event) {
     notFound();

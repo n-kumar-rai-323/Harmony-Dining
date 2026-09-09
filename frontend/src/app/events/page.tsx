@@ -20,7 +20,7 @@ import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 
 import EventEnquiryForm from '@/components/events/event-enquiry-form';
 
-import { getPastEvents } from '@/data/past-events';
+import { getPastEventsList } from '@/lib/api/events';
 import {
   getEventCategoryCards,
   getEventEnquirySteps,
@@ -39,13 +39,13 @@ export const metadata: Metadata = {
 
 const eventTypes = getEventCategoryCards();
 
-const pastEvents = getPastEvents();
-
 const harmonyBenefits = getHarmonyEventBenefits();
 
 const enquirySteps = getEventEnquirySteps();
 
-export default function EventsPage() {
+export default async function EventsPage() {
+  const pastEvents = await getPastEventsList();
+
   return (
     <Box
       component="main"
