@@ -1,0 +1,109 @@
+[
+  {
+    "slug": "birthday-celebration",
+    "title": "Birthday Celebration",
+    "category": "Celebration",
+    "date": "2025-11-22",
+    "guests": "Family & friends",
+    "summary": "An evening of dinner, cake and warm company in the main dining hall.",
+    "cover": {
+      "type": "image",
+      "src": "/images/home/harmony-experience-event.jpg",
+      "alt": "Birthday celebration hosted at Harmony"
+    },
+    "media": [
+      {
+        "type": "image",
+        "src": "/images/home/harmony-experience-event.jpg",
+        "alt": "Guests gathered around the celebration table"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-gallery-dining-hall.jpg",
+        "alt": "The dining hall set for the party"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-dining-experience.jpg",
+        "alt": "Dinner service during the celebration"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-experience-team.jpg",
+        "alt": "The Harmony team looking after guests"
+      }
+    ]
+  },
+  {
+    "slug": "anniversary-evening",
+    "title": "Anniversary Evening",
+    "category": "Private Event",
+    "date": "2025-09-14",
+    "guests": "Group gathering",
+    "summary": "A private anniversary dinner in the banquet hall, captured in photos and a short highlight video.",
+    "cover": {
+      "type": "video",
+      "src": "/media/past-events/anniversary-evening/highlight.mp4",
+      "poster": "/images/home/harmony-banquet-hall.jpg",
+      "alt": "Anniversary evening highlight video"
+    },
+    "media": [
+      {
+        "type": "video",
+        "src": "/media/past-events/anniversary-evening/highlight.mp4",
+        "poster": "/images/home/harmony-banquet-hall.jpg",
+        "alt": "Anniversary evening highlight video"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-banquet-hall.jpg",
+        "alt": "Banquet hall arranged for the anniversary dinner"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-gallery-terrace.jpg",
+        "alt": "Guests on the terrace before dinner"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-experience-kitchen.jpg",
+        "alt": "The kitchen preparing the anniversary menu"
+      }
+    ]
+  },
+  {
+    "slug": "dining-celebration",
+    "title": "Dining Celebration",
+    "category": "Dining Event",
+    "date": "2025-07-05",
+    "guests": "Private dining",
+    "summary": "A relaxed private dining celebration with a seasonal set menu.",
+    "cover": {
+      "type": "image",
+      "src": "/images/home/harmony-gallery-dining-hall.jpg",
+      "alt": "Dining celebration at Harmony"
+    },
+    "media": [
+      {
+        "type": "image",
+        "src": "/images/home/harmony-gallery-dining-hall.jpg",
+        "alt": "The private dining table"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-hero-dining.jpg",
+        "alt": "Guests enjoying the meal"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-gallery-entrance.jpg",
+        "alt": "Arrivals at the Harmony entrance"
+      },
+      {
+        "type": "image",
+        "src": "/images/home/harmony-hero-restaurant.jpg",
+        "alt": "The restaurant during service"
+      }
+    ]
+  }
+]

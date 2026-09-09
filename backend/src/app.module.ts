@@ -17,6 +17,7 @@ import { MenuModule } from './menu/menu.module';
 import { StorageModule } from './storage/storage.module';
 import { MediaModule } from './media/media.module';
 import { GalleryModule } from './gallery/gallery.module';
+import { EventsModule } from './events/events.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -82,6 +83,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     MenuModule,
     MediaModule,
     GalleryModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [

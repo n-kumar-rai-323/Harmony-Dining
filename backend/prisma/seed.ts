@@ -391,6 +391,125 @@ function mimeOf(p: string): string {
       : 'image/jpeg';
 }
 
+interface SeedEventMedia {
+  type: 'image' | 'video';
+  src: string;
+  poster?: string;
+  alt: string;
+}
+interface SeedEvent {
+  slug: string;
+  title: string;
+  category: string;
+  date: string;
+  guests?: string;
+  summary: string;
+  cover: SeedEventMedia;
+  media: SeedEventMedia[];
+}
+
+// Imports the site's past events. Placeholder video files are skipped;
+// their poster image is used instead. Empty-DB only.
+async function seedEvents(): Promise<void> {
+  const existing = await prisma.event.count();
+  if (existing > 0) {
+    console.log(`  · events: ${existing} already present — skipped.`);
+    return;
+  }
+
+  let raw: SeedEvent[];
+  try {
+    raw = JSON.parse(
+      readFileSync(join(__dirname, 'seed-data', 'past-events.json'), 'utf8'),
+    );
+  } catch {
+    console.warn('  · events: seed-data/past-events.json not found — skipped.');
+    return;
+  }
+
+  const publicDir = join(__dirname, '..', '..', 'frontend', 'public');
+  const localDir = (
+    process.env.STORAGE_LOCAL_DIR ?? './storage/uploads'
+  ).replace(/^\.\//, '');
+  const baseUrl = (
+    process.env.STORAGE_PUBLIC_BASE_URL ?? 'http://localhost:4100/media'
+  ).replace(/\/$/, '');
+  const destDir = join(process.cwd(), localDir, 'events');
+  mkdirSync(destDir, { recursive: true });
+
+  const mediaByPath = new Map<string, string>();
+  const ensureMedia = async (
+    imgPath: string,
+    alt: string,
+  ): Promise<string | null> => {
+    if (mediaByPath.has(imgPath)) return mediaByPath.get(imgPath)!;
+    const src = join(publicDir, imgPath.replace(/^\//, ''));
+    if (!existsSync(src)) return null;
+    const fileName = imgPath.split('/').pop() ?? 'image.jpg';
+    copyFileSync(src, join(destDir, fileName));
+    const key = `events/${fileName}`;
+    const media = await prisma.media.create({
+      data: {
+        storageKey: key,
+        url: `${baseUrl}/${key}`,
+        mimeType: mimeOf(imgPath),
+        sizeBytes: 0,
+        originalFilename: fileName,
+        folder: 'events',
+        altText: alt,
+      },
+    });
+    mediaByPath.set(imgPath, media.id);
+    return media.id;
+  };
+
+  let n = 0;
+  for (const [ei, ev] of raw.entries()) {
+    const coverImg =
+      ev.cover.type === 'image' ? ev.cover.src : ev.cover.poster;
+    const coverMediaId = coverImg
+      ? await ensureMedia(coverImg, ev.title)
+      : null;
+
+    const imageMedia = ev.media.filter((m) => m.type === 'image');
+    const eventMediaData: {
+      mediaId: string;
+      type: 'IMAGE';
+      altText: string;
+      sortOrder: number;
+    }[] = [];
+    for (const [mi, m] of imageMedia.entries()) {
+      const mid = await ensureMedia(m.src, m.alt);
+      if (mid) {
+        eventMediaData.push({
+          mediaId: mid,
+          type: 'IMAGE',
+          altText: m.alt,
+          sortOrder: mi,
+        });
+      }
+    }
+
+    await prisma.event.create({
+      data: {
+        slug: ev.slug,
+        title: ev.title,
+        category: ev.category,
+        summary: ev.summary,
+        eventDate: new Date(ev.date),
+        guestsLabel: ev.guests ?? null,
+        coverMediaId,
+        status: 'PUBLISHED',
+        lifecycle: 'COMPLETED',
+        media: { create: eventMediaData },
+      },
+    });
+    n += 1;
+    void ei;
+  }
+  console.log(`  · events: imported ${n} events.`);
+}
+
 async function main(): Promise<void> {
   console.log('Seeding Harmony database…');
   const idByKey = await seedPermissions();
@@ -399,6 +518,7 @@ async function main(): Promise<void> {
   await seedSingletons();
   await seedMenu();
   await seedGallery();
+  await seedEvents();
   console.log('Seed complete.');
 }
 
