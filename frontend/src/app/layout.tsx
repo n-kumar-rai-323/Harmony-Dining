@@ -105,10 +105,9 @@ export const metadata: Metadata = {
     },
   },
 
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/images/harmony-logo.jpeg',
-  },
+  // Icons and the social preview image come from the file
+  // conventions: app/icon.png, app/apple-icon.png,
+  // app/opengraph-image.png.
 };
 
 export const viewport: Viewport = {
