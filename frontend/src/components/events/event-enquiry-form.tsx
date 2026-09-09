@@ -18,6 +18,7 @@ import {
 
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
@@ -43,6 +44,11 @@ import {
   getEventTypes,
 } from '@/data/booking-options';
 
+import {
+  submitEventEnquiry,
+  type EnquiryResult,
+} from '@/lib/api/enquiries';
+
 const eventTypes = getEventTypes();
 
 const eventTimes = getEventTimeSlots();
@@ -55,9 +61,11 @@ export default function EventEnquiryForm() {
   const theme = useTheme();
 
   const [
-    requestReady,
-    setRequestReady,
-  ] = useState(false);
+    submitResult,
+    setSubmitResult,
+  ] = useState<EnquiryResult | null>(
+    null,
+  );
 
   const today =
     useMemo(
@@ -108,103 +116,57 @@ export default function EventEnquiryForm() {
   /* =======================================================
      SUBMIT
 
-     Current state:
-     frontend validation only.
-
-     Production:
-     POST /event-bookings
+     Posts to the public enquiry endpoint. The backend
+     re-validates, files the enquiry as NEW (it never blocks
+     a date), notifies Harmony and returns a reference
+     number. When the API is not connected the helper
+     reports that and the form falls back to a manual flow.
   ======================================================= */
 
   async function onSubmit(
     data:
       EventEnquiryFormValues,
   ) {
-    setRequestReady(false);
+    setSubmitResult(null);
 
-    const eventPayload = {
-      fullName:
-        data.fullName.trim(),
+    const result =
+      await submitEventEnquiry({
+        fullName:
+          data.fullName.trim(),
 
-      phone:
-        data.phone.trim(),
+        phone:
+          data.phone.trim(),
 
-      email:
-        data.email?.trim() ||
-        null,
+        email:
+          data.email?.trim() ||
+          null,
 
-      eventType:
-        data.eventType,
+        eventType:
+          data.eventType,
 
-      preferredDate:
-        data.preferredDate,
+        preferredDate:
+          data.preferredDate,
 
-      alternativeDate:
-        data.alternativeDate ||
-        null,
+        alternativeDate:
+          data.alternativeDate ||
+          null,
 
-      guests:
-        Number(
-          data.guests,
-        ),
+        startTime:
+          data.eventTime ||
+          null,
 
-      eventTime:
-        data.eventTime,
+        guests:
+          Number(
+            data.guests,
+          ),
 
-      requirements:
-        data.requirements
-          ?.trim() ||
-        null,
-    };
+        requirements:
+          data.requirements
+            ?.trim() ||
+          null,
+      });
 
-    console.log(
-      'Event enquiry payload:',
-      eventPayload,
-    );
-
-    /*
-      =====================================================
-      FUTURE PRODUCTION REQUEST
-      =====================================================
-
-      const response =
-        await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/event-bookings`,
-          {
-            method: 'POST',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
-
-            body:
-              JSON.stringify(
-                eventPayload,
-              ),
-          },
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          'Unable to submit event enquiry',
-        );
-      }
-
-      Backend responsibilities:
-
-      1. Validate payload again
-      2. Sanitize input
-      3. Check tenant/event rules
-      4. Generate enquiry number
-      5. status = PENDING
-      6. DO NOT block the date yet
-      7. Save to PostgreSQL
-      8. Notify Harmony Admin
-      9. Staff reviews enquiry
-      10. Only confirmed booking blocks date
-    */
-
-    setRequestReady(true);
+    setSubmitResult(result);
   }
 
   return (
@@ -683,10 +645,87 @@ export default function EventEnquiryForm() {
         />
 
         {/* ===================================================
-            FRONTEND DEVELOPMENT STATE
+            SUBMIT RESULT
         =================================================== */}
 
-        {requestReady ? (
+        {submitResult &&
+        submitResult.ok === false ? (
+          <Box
+            role="alert"
+            sx={{
+              p: 1.6,
+
+              display:
+                'grid',
+
+              gridTemplateColumns:
+                '28px minmax(0,1fr)',
+
+              gap: 1,
+
+              bgcolor:
+                alpha(
+                  theme.palette
+                    .error
+                    .main,
+                  0.07,
+                ),
+
+              border:
+                '1px solid',
+
+              borderColor:
+                alpha(
+                  theme.palette
+                    .error
+                    .main,
+                  0.24,
+                ),
+
+              borderRadius:
+                1.5,
+            }}
+          >
+            <ErrorOutlineRoundedIcon
+              aria-hidden
+              sx={{
+                color:
+                  'error.main',
+              }}
+            />
+
+            <Box>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight:
+                    800,
+                }}
+              >
+                We couldn’t send
+                your enquiry.
+              </Typography>
+
+              <Typography
+                variant="caption"
+                sx={{
+                  display:
+                    'block',
+
+                  mt: 0.25,
+
+                  color:
+                    'text.secondary',
+                }}
+              >
+                {submitResult.error}
+              </Typography>
+            </Box>
+          </Box>
+        ) : null}
+
+        {submitResult &&
+        submitResult.ok ? (
           <Box
             role="status"
             sx={{
@@ -731,37 +770,74 @@ export default function EventEnquiryForm() {
               }}
             />
 
-            <Box>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight:
-                    800,
-                }}
-              >
-                Your event details
-                are ready.
-              </Typography>
+            {submitResult.connected ? (
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight:
+                      800,
+                  }}
+                >
+                  Enquiry received —
+                  reference{' '}
+                  {submitResult.reference}
+                </Typography>
 
-              <Typography
-                variant="caption"
-                sx={{
-                  display:
-                    'block',
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display:
+                      'block',
 
-                  mt: 0.25,
+                    mt: 0.25,
 
-                  color:
-                    'text.secondary',
-                }}
-              >
-                Online submission
-                will become active
-                when Harmony’s
-                booking service is
-                connected.
-              </Typography>
-            </Box>
+                    color:
+                      'text.secondary',
+                  }}
+                >
+                  Our team will review
+                  your request for{' '}
+                  {submitResult.preferredDate}{' '}
+                  and contact you before
+                  anything is confirmed.
+                  Please keep your
+                  reference number.
+                </Typography>
+              </Box>
+            ) : (
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight:
+                      800,
+                  }}
+                >
+                  Your event details
+                  are ready.
+                </Typography>
+
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display:
+                      'block',
+
+                    mt: 0.25,
+
+                    color:
+                      'text.secondary',
+                  }}
+                >
+                  Online submission
+                  will become active
+                  when Harmony’s
+                  booking service is
+                  connected.
+                </Typography>
+              </Box>
+            )}
           </Box>
         ) : null}
 
