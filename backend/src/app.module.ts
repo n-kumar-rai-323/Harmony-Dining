@@ -10,6 +10,11 @@ import { AppService } from './app.service';
 import { configuration, type AppConfig } from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { AuditModule } from './audit/audit.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { SessionAuthGuard } from './auth/guards/session-auth.guard';
+import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
@@ -65,12 +70,18 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     }),
 
     PrismaModule,
+    AuditModule,
+    AuthModule,
     HealthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    // Order matters: rate limit -> authenticate -> authorize.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: SessionAuthGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })

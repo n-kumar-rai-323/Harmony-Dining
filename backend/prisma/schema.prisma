@@ -29,16 +29,19 @@ enum AdminStatus {
 }
 
 model AdminUser {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  passwordHash String
-  name         String
-  role         AdminRole   @default(STAFF)
-  status       AdminStatus @default(ACTIVE)
-  lastLoginAt  DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  deletedAt    DateTime?
+  id                  String      @id @default(cuid())
+  email               String      @unique
+  passwordHash        String
+  name                String
+  role                AdminRole   @default(STAFF)
+  status              AdminStatus @default(ACTIVE)
+  lastLoginAt         DateTime?
+  failedLoginAttempts Int         @default(0)
+  lockedUntil         DateTime?
+  passwordChangedAt   DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  deletedAt           DateTime?
 
   sessions            Session[]
   permissionOverrides AdminUserPermission[]

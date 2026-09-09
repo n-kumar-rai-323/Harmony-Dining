@@ -21,6 +21,9 @@ async function bootstrap(): Promise<void> {
   const corsOrigins = config.get('corsOrigins', { infer: true });
   const port = config.get('port', { infer: true });
 
+  // Behind one reverse proxy in production (Railway/Render/Fly, Nginx).
+  app.set('trust proxy', 1);
+
   app.setGlobalPrefix('api');
 
   app.use(helmet());
