@@ -38,34 +38,14 @@ import {
 } from '@/validation/event-enquiry.schema';
 
 import { getTodayLocalDate } from '@/lib/date';
+import {
+  getEventTimeSlots,
+  getEventTypes,
+} from '@/data/booking-options';
 
-/* =========================================================
-   OPTIONS
+const eventTypes = getEventTypes();
 
-   Future:
-   GET /events/public/options
-   controlled by Harmony Admin.
-========================================================= */
-
-const eventTypes = [
-  'Birthday',
-  'Wedding',
-  'Anniversary',
-  'Corporate Event',
-  'Family Gathering',
-  'Engagement',
-  'Private Celebration',
-  'Other',
-];
-
-const eventTimes = [
-  'Morning',
-  'Lunch',
-  'Afternoon',
-  'Evening',
-  'Dinner',
-  'Full Day',
-];
+const eventTimes = getEventTimeSlots();
 
 /* =========================================================
    COMPONENT

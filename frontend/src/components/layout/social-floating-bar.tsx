@@ -10,39 +10,37 @@ import {
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import NorthEastRoundedIcon from '@mui/icons-material/NorthEastRounded';
 
+import type { IconType } from 'react-icons';
 import {
   FaFacebookF,
   FaInstagram,
   FaTiktok,
 } from 'react-icons/fa';
 
+import {
+  getSocialLinks,
+  type SocialPlatform,
+} from '@/data/site';
+
 /* =========================================================
    SOCIAL LINKS
 ========================================================= */
 
-const socialLinks = [
-  {
-    label: 'TikTok',
-    href:
-      'https://www.tiktok.com/@harmonydiningeventcenter',
-    icon: FaTiktok,
-    brandColor: '#111111',
-  },
-  {
-    label: 'Facebook',
-    href:
-      'https://www.facebook.com/people/Harmony-Dining-Event-Center/61593063557390/',
-    icon: FaFacebookF,
-    brandColor: '#1877F2',
-  },
-  {
-    label: 'Instagram',
-    href:
-      'https://www.instagram.com/harmonydiningandevent',
-    icon: FaInstagram,
-    brandColor: '#E1306C',
-  },
-] as const;
+const PLATFORM_ICONS: Record<
+  SocialPlatform,
+  IconType
+> = {
+  facebook: FaFacebookF,
+  instagram: FaInstagram,
+  tiktok: FaTiktok,
+};
+
+const socialLinks = getSocialLinks().map(
+  (link) => ({
+    ...link,
+    icon: PLATFORM_ICONS[link.platform],
+  }),
+);
 
 /* =========================================================
    COMPONENT

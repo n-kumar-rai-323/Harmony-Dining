@@ -25,11 +25,17 @@ import PhotoLibraryOutlinedIcon from '@mui/icons-material/PhotoLibraryOutlined';
 import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded';
 import ReviewsOutlinedIcon from '@mui/icons-material/ReviewsOutlined';
 
+import type { IconType } from 'react-icons';
 import {
   FaFacebookF,
   FaInstagram,
   FaTiktok,
 } from 'react-icons/fa';
+
+import {
+  getSocialLinks,
+  type SocialPlatform,
+} from '@/data/site';
 
 /* =========================================================
    TYPES
@@ -292,29 +298,23 @@ const initialFooterContent: FooterContent = {
    SOCIAL LINKS
 ========================================================= */
 
-const socialLinks = [
-  {
-    label: 'TikTok',
-    href:
-      'https://www.tiktok.com/@harmonydiningeventcenter',
-    icon: FaTiktok,
-    color: '#111111',
-  },
-  {
-    label: 'Facebook',
-    href:
-      'https://www.facebook.com/people/Harmony-Dining-Event-Center/61593063557390/',
-    icon: FaFacebookF,
-    color: '#1877F2',
-  },
-  {
-    label: 'Instagram',
-    href:
-      'https://www.instagram.com/harmonydiningandevent',
-    icon: FaInstagram,
-    color: '#E1306C',
-  },
-] as const;
+const PLATFORM_ICONS: Record<
+  SocialPlatform,
+  IconType
+> = {
+  facebook: FaFacebookF,
+  instagram: FaInstagram,
+  tiktok: FaTiktok,
+};
+
+const socialLinks = getSocialLinks().map(
+  (link) => ({
+    label: link.label,
+    href: link.href,
+    icon: PLATFORM_ICONS[link.platform],
+    color: link.brandColor,
+  }),
+);
 
 /* =========================================================
    HELPERS

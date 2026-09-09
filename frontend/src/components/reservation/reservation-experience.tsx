@@ -23,10 +23,8 @@ import {
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
-import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
-import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 
 import {
   yupResolver,
@@ -44,63 +42,18 @@ import {
 } from '@/validation/reservation.schema';
 
 import { getTodayLocalDate } from '@/lib/date';
+import {
+  getReservationMaxGuests,
+  getReservationTimeSlots,
+} from '@/data/booking-options';
+import { getReservationBenefits } from '@/data/marketing';
+import FeatureIcon from '@/components/common/feature-icon';
 
-/* =========================================================
-   DEVELOPMENT TIME SLOTS
+const timeSlots = getReservationTimeSlots();
 
-   Future:
-   GET /reservations/public/availability
-========================================================= */
+const maxGuests = getReservationMaxGuests();
 
-const timeSlots = [
-  '10:00 AM',
-  '10:30 AM',
-  '11:00 AM',
-  '11:30 AM',
-  '12:00 PM',
-  '12:30 PM',
-  '1:00 PM',
-  '1:30 PM',
-  '2:00 PM',
-  '2:30 PM',
-  '3:00 PM',
-  '3:30 PM',
-  '4:00 PM',
-  '4:30 PM',
-  '5:00 PM',
-  '5:30 PM',
-  '6:00 PM',
-  '6:30 PM',
-  '7:00 PM',
-  '7:30 PM',
-  '8:00 PM',
-  '8:30 PM',
-];
-
-/* =========================================================
-   COMPACT BENEFITS
-========================================================= */
-
-const reservationBenefits = [
-  {
-    title: 'Choose Your Time',
-    description:
-      'Select your preferred date and dining time.',
-    icon: ScheduleRoundedIcon,
-  },
-  {
-    title: 'Tell Us Your Group Size',
-    description:
-      'Reserve for intimate dining or a larger table.',
-    icon: GroupsRoundedIcon,
-  },
-  {
-    title: 'We Confirm With You',
-    description:
-      'Our team checks availability before the reservation is confirmed.',
-    icon: CheckCircleRoundedIcon,
-  },
-];
+const reservationBenefits = getReservationBenefits();
 
 /* =========================================================
    PAGE
@@ -555,9 +508,6 @@ export default function ReservationExperience() {
               >
                 {reservationBenefits.map(
                   (benefit) => {
-                    const Icon =
-                      benefit.icon;
-
                     return (
                       <Box
                         key={
@@ -616,7 +566,10 @@ export default function ReservationExperience() {
                               ),
                           }}
                         >
-                          <Icon
+                          <FeatureIcon
+                            iconKey={
+                              benefit.iconKey
+                            }
                             aria-hidden
                           />
                         </Box>
@@ -968,7 +921,7 @@ export default function ReservationExperience() {
                       }
                     >
                       {Array.from(
-                        { length: 12 },
+                        { length: maxGuests },
                         (_, index) =>
                           index + 1,
                       ).map(

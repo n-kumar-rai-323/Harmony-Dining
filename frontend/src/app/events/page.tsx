@@ -14,20 +14,20 @@ import {
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
-import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
-import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
-import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import PhotoLibraryRoundedIcon from '@mui/icons-material/PhotoLibraryRounded';
-import EventSeatRoundedIcon from '@mui/icons-material/EventSeatRounded';
-import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded';
-import SupportAgentRoundedIcon from '@mui/icons-material/SupportAgentRounded';
-import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 
 import EventEnquiryForm from '@/components/events/event-enquiry-form';
 
 import { getPastEvents } from '@/data/past-events';
+import {
+  getEventCategoryCards,
+  getEventEnquirySteps,
+  getHarmonyEventBenefits,
+} from '@/data/marketing';
+
+import FeatureIcon from '@/components/common/feature-icon';
 
 import { formatLongDate } from '@/lib/date';
 
@@ -37,75 +37,13 @@ export const metadata: Metadata = {
     'Celebrate birthdays, private gatherings, corporate events and memorable occasions at Harmony Dining & Event Center.',
 };
 
-/* =========================================================
-   DEVELOPMENT CONTENT
-
-   Future source:
-   NestJS Events API + Harmony Admin Dashboard
-========================================================= */
-
-const eventTypes = [
-  {
-    title: 'Birthday Celebrations',
-    description:
-      'Warm celebrations designed for family, friends and unforgettable birthday moments.',
-    icon: CelebrationRoundedIcon,
-  },
-  {
-    title: 'Corporate Events',
-    description:
-      'Professional spaces for meetings, company dinners and team gatherings.',
-    icon: GroupsRoundedIcon,
-  },
-  {
-    title: 'Private Dining',
-    description:
-      'A more intimate setting for families, friends and special occasions.',
-    icon: RestaurantRoundedIcon,
-  },
-  {
-    title: 'Custom Celebrations',
-    description:
-      'Tell us your idea and our team will help shape the experience around it.',
-    icon: AutoAwesomeRoundedIcon,
-  },
-];
+const eventTypes = getEventCategoryCards();
 
 const pastEvents = getPastEvents();
 
-const harmonyBenefits = [
-  {
-    title: 'Beautiful Venue',
-    description:
-      'A polished setting designed for dining, celebrations and memorable gatherings.',
-    icon: LocationOnRoundedIcon,
-  },
-  {
-    title: 'Flexible Setup',
-    description:
-      'Seating and event arrangements can be planned around your guest count.',
-    icon: EventSeatRoundedIcon,
-  },
-  {
-    title: 'Dining Together',
-    description:
-      'Coordinate your event experience with Harmony food and beverage options.',
-    icon: RestaurantMenuRoundedIcon,
-  },
-  {
-    title: 'Event Support',
-    description:
-      'Our team helps coordinate the important details before your event is confirmed.',
-    icon: SupportAgentRoundedIcon,
-  },
-];
+const harmonyBenefits = getHarmonyEventBenefits();
 
-const enquirySteps = [
-  'Share your event details',
-  'We check your preferred date',
-  'Our team contacts you',
-  'Confirm the final plan',
-];
+const enquirySteps = getEventEnquirySteps();
 
 export default function EventsPage() {
   return (
@@ -417,8 +355,6 @@ export default function EventsPage() {
             }}
           >
             {eventTypes.map((eventType) => {
-              const Icon = eventType.icon;
-
               return (
                 <Box
                   key={eventType.title}
@@ -475,7 +411,10 @@ export default function EventsPage() {
                       color: 'secondary.dark',
                     }}
                   >
-                    <Icon aria-hidden />
+                    <FeatureIcon
+                      iconKey={eventType.iconKey}
+                      aria-hidden
+                    />
                   </Box>
 
                   <Typography
@@ -956,8 +895,6 @@ export default function EventsPage() {
             }}
           >
             {harmonyBenefits.map((benefit) => {
-              const Icon = benefit.icon;
-
               return (
                 <Box
                   key={benefit.title}
@@ -996,7 +933,10 @@ export default function EventsPage() {
                         'secondary.dark',
                     }}
                   >
-                    <Icon aria-hidden />
+                    <FeatureIcon
+                      iconKey={benefit.iconKey}
+                      aria-hidden
+                    />
                   </Box>
 
                   <Typography

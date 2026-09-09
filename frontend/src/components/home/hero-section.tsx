@@ -53,7 +53,7 @@ type HeroAction = {
     | 'tertiary';
 };
 
-type HeroContent = {
+export type HeroContent = {
   eyebrow?: string;
 
   title: string;
@@ -212,7 +212,14 @@ const heroContent: HeroContent = {
    HERO SECTION
 ========================================================= */
 
-export default function HeroSection() {
+type HeroSectionProps = {
+  /** Parent Server Component can pass published hero content. */
+  content?: HeroContent;
+};
+
+export default function HeroSection({
+  content = heroContent,
+}: HeroSectionProps) {
   const {
     eyebrow,
 
@@ -236,7 +243,7 @@ export default function HeroSection() {
     imageCaption,
 
     actions = [],
-  } = heroContent;
+  } = content;
 
   const validActions =
     actions.filter(

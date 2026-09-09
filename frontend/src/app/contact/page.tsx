@@ -17,6 +17,11 @@ import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
 
+import {
+  getSiteContact,
+  getSocialLinks,
+} from '@/data/site';
+
 export const metadata: Metadata = {
   title: 'Contact',
   description:
@@ -32,35 +37,19 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * Fill these in with the venue's real details. Rows with an
- * empty value are not rendered, so it is safe to leave blank
- * until the information is confirmed.
- */
+const SITE_CONTACT = getSiteContact();
+
 const CONTACT_DETAILS = {
-  phone: '',
-  email: '',
-  addressLines: [
-    'Harmony Dining & Event Center',
-    'Kumaripati, Lalitpur',
-  ],
-  hours: ['Mon – Sun', '10:00 AM – 10:00 PM'],
+  phone: SITE_CONTACT.phone,
+  email: SITE_CONTACT.email,
+  addressLines: SITE_CONTACT.addressLines,
+  hours: SITE_CONTACT.hours.flatMap((entry) => [
+    entry.label,
+    entry.value,
+  ]),
 };
 
-const SOCIAL_LINKS = [
-  {
-    label: 'Facebook',
-    href: 'https://www.facebook.com/people/Harmony-Dining-Event-Center/61593063557390/',
-  },
-  {
-    label: 'Instagram',
-    href: 'https://www.instagram.com/harmonydiningandevent',
-  },
-  {
-    label: 'TikTok',
-    href: 'https://www.tiktok.com/@harmonydiningeventcenter',
-  },
-];
+const SOCIAL_LINKS = getSocialLinks();
 
 export default function ContactPage() {
   return (

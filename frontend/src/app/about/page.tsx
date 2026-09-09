@@ -12,9 +12,10 @@ import {
 } from '@mui/material';
 
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
-import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
-import SpaRoundedIcon from '@mui/icons-material/SpaRounded';
+
+import FeatureIcon from '@/components/common/feature-icon';
+import { getAboutValues } from '@/data/marketing';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -31,26 +32,7 @@ export const metadata: Metadata = {
   },
 };
 
-const values = [
-  {
-    icon: SpaRoundedIcon,
-    title: 'Fresh, considered ingredients',
-    description:
-      'We build our menu around seasonal produce and trusted suppliers, so every plate tastes the way it should.',
-  },
-  {
-    icon: FavoriteRoundedIcon,
-    title: 'Hospitality that feels personal',
-    description:
-      'From a quiet dinner for two to a hall full of guests, our team looks after the details so you can be present.',
-  },
-  {
-    icon: RestaurantRoundedIcon,
-    title: 'One place for every occasion',
-    description:
-      'Everyday dining, private events and large celebrations share the same kitchen and the same standard of care.',
-  },
-];
+const values = getAboutValues();
 
 export default function AboutPage() {
   return (
@@ -234,8 +216,6 @@ export default function AboutPage() {
               }}
             >
               {values.map((value) => {
-                const Icon = value.icon;
-
                 return (
                   <Box key={value.title}>
                     <Box
@@ -249,7 +229,10 @@ export default function AboutPage() {
                         color: 'secondary.dark',
                       }}
                     >
-                      <Icon aria-hidden />
+                      <FeatureIcon
+                        iconKey={value.iconKey}
+                        aria-hidden
+                      />
                     </Box>
 
                     <Typography

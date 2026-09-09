@@ -46,7 +46,7 @@ type DiningCta = {
   href: string;
 };
 
-type DiningExperienceContent = {
+export type DiningExperienceContent = {
   eyebrow?: string;
 
   title: string;
@@ -165,7 +165,14 @@ const diningContent: DiningExperienceContent = {
    DINING EXPERIENCE
 ========================================================= */
 
-export default function DiningExperience() {
+type DiningExperienceProps = {
+  /** Parent Server Component can pass published section content. */
+  content?: DiningExperienceContent;
+};
+
+export default function DiningExperience({
+  content = diningContent,
+}: DiningExperienceProps) {
   const {
     eyebrow,
     title,
@@ -179,7 +186,7 @@ export default function DiningExperience() {
 
     detail,
     cta,
-  } = diningContent;
+  } = content;
 
   /* Validated photos, capped at 5, with a single-image fallback. */
   const diningSlides: CarouselSlide[] = (() => {
