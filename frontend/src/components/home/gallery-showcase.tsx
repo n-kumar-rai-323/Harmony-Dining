@@ -39,8 +39,15 @@ export type GalleryShowcaseContent = {
   };
 };
 
+export type GalleryShowcasePhoto = {
+  src: string;
+  alt: string;
+};
+
 type GalleryShowcaseProps = {
   content?: GalleryShowcaseContent;
+  /** Preview photos, provided by the page from the API. Falls back to local. */
+  photos?: GalleryShowcasePhoto[];
 };
 
 const initialContent: GalleryShowcaseContent = {
@@ -58,6 +65,7 @@ const initialContent: GalleryShowcaseContent = {
 
 export default function GalleryShowcase({
   content = initialContent,
+  photos: photosProp,
 }: GalleryShowcaseProps) {
   const {
     enabled = true,
@@ -68,12 +76,13 @@ export default function GalleryShowcase({
     cta,
   } = content;
 
-  const photos = getHomeGalleryItems(6).map(
-    (item) => ({
-      src: item.image,
-      alt: item.alt,
-    }),
-  );
+  const photos =
+    photosProp && photosProp.length > 0
+      ? photosProp
+      : getHomeGalleryItems(6).map((item) => ({
+          src: item.image,
+          alt: item.alt,
+        }));
 
   const hasCta =
     Boolean(cta?.label?.trim()) &&

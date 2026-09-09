@@ -10,6 +10,7 @@ import LocationContact from '@/components/home/location-contact';
 import ReservationCta from '@/components/home/reservation-cta';
 import ReviewsShowcase from '@/components/home/reviews-showcase';
 import { getMenuCategories } from '@/lib/api/menu';
+import { getHomeGalleryItems } from '@/lib/api/gallery';
 
 export const metadata: Metadata = {
   description:
@@ -26,7 +27,15 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const menuCategories = await getMenuCategories();
+  const [menuCategories, galleryItems] = await Promise.all([
+    getMenuCategories(),
+    getHomeGalleryItems(6),
+  ]);
+
+  const galleryPhotos = galleryItems.map((item) => ({
+    src: item.image,
+    alt: item.alt,
+  }));
 
   return (
     <main>
@@ -42,7 +51,7 @@ export default async function Home() {
 
       <ReservationCta />
 
-      <GalleryShowcase />
+      <GalleryShowcase photos={galleryPhotos} />
 
       <ReviewsShowcase />
 

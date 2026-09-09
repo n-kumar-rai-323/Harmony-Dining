@@ -33,6 +33,36 @@ const securityHeaders = [
   },
 ];
 
+/**
+ * Hosts that may serve <Image> sources: the API's /media/* (local dev
+ * driver) and an optional CDN/bucket host for the S3 driver in production.
+ * Derived from env so no code change is needed per environment.
+ */
+function mediaRemotePatterns() {
+  const patterns: NonNullable<
+    NonNullable<NextConfig['images']>['remotePatterns']
+  > = [];
+  const sources = [
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.NEXT_PUBLIC_MEDIA_URL,
+  ].filter(Boolean) as string[];
+
+  for (const raw of sources) {
+    try {
+      const u = new URL(raw);
+      patterns.push({
+        protocol: u.protocol.replace(':', '') as 'http' | 'https',
+        hostname: u.hostname,
+        port: u.port || undefined,
+        pathname: '/**',
+      });
+    } catch {
+      // ignore malformed env value
+    }
+  }
+  return patterns;
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
@@ -44,6 +74,7 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     // Every `quality` value passed to next/image must be listed here (Next 16).
     qualities: [75, 80, 85],
+    remotePatterns: mediaRemotePatterns(),
   },
 
   async headers() {

@@ -16,6 +16,7 @@ import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
 import CollectionsRoundedIcon from '@mui/icons-material/CollectionsRounded';
 
 import GalleryExperience from '@/components/gallery/gallery-experience';
+import { getGalleryItems } from '@/lib/api/gallery';
 
 export const metadata: Metadata = {
   title: 'Gallery',
@@ -23,7 +24,9 @@ export const metadata: Metadata = {
     'Explore dining spaces, celebrations and memorable moments at Harmony Dining & Event Center.',
 };
 
-export default function GalleryPage() {
+export default async function GalleryPage() {
+  const galleryItems = await getGalleryItems();
+
   return (
     <Box
       component="main"
@@ -279,7 +282,7 @@ export default function GalleryPage() {
           },
         }}
       >
-        <GalleryExperience />
+        <GalleryExperience items={galleryItems} />
       </Box>
 
       {/* =====================================================

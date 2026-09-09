@@ -32,15 +32,27 @@ import {
   type GalleryItem,
 } from '@/data/gallery';
 
-const galleryItems = getGalleryItems();
+const fallbackGalleryItems = getGalleryItems();
 const categories = getGalleryCategories();
 
 /* =========================================================
    COMPONENT
 ========================================================= */
 
-export default function GalleryExperience() {
+type GalleryExperienceProps = {
+  /** Published gallery, provided by the page from the API. */
+  items?: GalleryItem[];
+};
+
+export default function GalleryExperience({
+  items,
+}: GalleryExperienceProps) {
   const theme = useTheme();
+
+  const galleryItems =
+    items && items.length > 0
+      ? items
+      : fallbackGalleryItems;
 
   const [
     category,
@@ -76,7 +88,7 @@ export default function GalleryExperience() {
           a.sortOrder -
           b.sortOrder,
       );
-    }, [category]);
+    }, [category, galleryItems]);
 
   /* Related photos shown under the lightbox caption:
      same category first, otherwise the rest of the gallery. */
@@ -111,7 +123,7 @@ export default function GalleryExperience() {
             b.sortOrder,
         )
         .slice(0, 8);
-    }, [selectedImage]);
+    }, [selectedImage, galleryItems]);
 
   return (
     <>
