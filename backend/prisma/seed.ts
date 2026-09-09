@@ -7,7 +7,7 @@
  *
  * Safe to run repeatedly. Never overwrites an existing admin password.
  */
-import { readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AdminRole, PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
@@ -298,6 +298,99 @@ async function seedMenu(): Promise<void> {
   );
 }
 
+interface SeedGalleryItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  image: string;
+  alt: string;
+  sortOrder: number;
+  featuredOnHome?: boolean;
+}
+
+// Imports the site's original gallery: copies each source image into the
+// local media store, creates a Media row + a GalleryItem. Empty-DB only.
+async function seedGallery(): Promise<void> {
+  const existing = await prisma.galleryItem.count();
+  if (existing > 0) {
+    console.log(`  · gallery: ${existing} items already present — skipped.`);
+    return;
+  }
+
+  let items: SeedGalleryItem[];
+  try {
+    items = JSON.parse(
+      readFileSync(join(__dirname, 'seed-data', 'gallery.json'), 'utf8'),
+    );
+  } catch {
+    console.warn('  · gallery: seed-data/gallery.json not found — skipped.');
+    return;
+  }
+
+  const publicDir = join(__dirname, '..', '..', 'frontend', 'public');
+  const localDir =
+    (process.env.STORAGE_LOCAL_DIR ?? './storage/uploads').replace(/^\.\//, '');
+  const baseUrl = (
+    process.env.STORAGE_PUBLIC_BASE_URL ?? 'http://localhost:4100/media'
+  ).replace(/\/$/, '');
+  const destDir = join(process.cwd(), localDir, 'gallery');
+  mkdirSync(destDir, { recursive: true });
+
+  let n = 0;
+  for (const [i, it] of items.entries()) {
+    const src = join(publicDir, it.image.replace(/^\//, ''));
+    if (!existsSync(src)) {
+      console.warn(`  · gallery: source not found ${it.image} — skipped item.`);
+      continue;
+    }
+    const fileName = `${it.id}${extOf(it.image)}`;
+    copyFileSync(src, join(destDir, fileName));
+    const key = `gallery/${fileName}`;
+
+    const media = await prisma.media.create({
+      data: {
+        storageKey: key,
+        url: `${baseUrl}/${key}`,
+        mimeType: mimeOf(it.image),
+        sizeBytes: 0,
+        originalFilename: it.image.split('/').pop() ?? fileName,
+        folder: 'gallery',
+        altText: it.alt,
+        title: it.title,
+      },
+    });
+
+    await prisma.galleryItem.create({
+      data: {
+        mediaId: media.id,
+        title: it.title,
+        altText: it.alt,
+        caption: it.description || null,
+        category: it.category as never,
+        status: 'PUBLISHED',
+        sortOrder: it.sortOrder ?? i,
+        featuredOnHome: it.featuredOnHome ?? false,
+      },
+    });
+    n += 1;
+  }
+  console.log(`  · gallery: imported ${n} items.`);
+}
+
+function extOf(p: string): string {
+  const m = /\.([a-z0-9]+)$/i.exec(p);
+  return m ? `.${m[1].toLowerCase()}` : '.jpg';
+}
+function mimeOf(p: string): string {
+  const e = extOf(p);
+  return e === '.png'
+    ? 'image/png'
+    : e === '.webp'
+      ? 'image/webp'
+      : 'image/jpeg';
+}
+
 async function main(): Promise<void> {
   console.log('Seeding Harmony database…');
   const idByKey = await seedPermissions();
@@ -305,6 +398,7 @@ async function main(): Promise<void> {
   await seedSuperAdmin();
   await seedSingletons();
   await seedMenu();
+  await seedGallery();
   console.log('Seed complete.');
 }
 

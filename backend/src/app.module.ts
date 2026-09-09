@@ -14,6 +14,9 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { MenuModule } from './menu/menu.module';
+import { StorageModule } from './storage/storage.module';
+import { MediaModule } from './media/media.module';
+import { GalleryModule } from './gallery/gallery.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -74,8 +77,11 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     AuditModule,
     AuthModule,
     HealthModule,
+    StorageModule,
     UsersModule,
     MenuModule,
+    MediaModule,
+    GalleryModule,
   ],
   controllers: [AppController],
   providers: [
