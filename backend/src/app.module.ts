@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { MenuModule } from './menu/menu.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -74,6 +75,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     AuthModule,
     HealthModule,
     UsersModule,
+    MenuModule,
   ],
   controllers: [AppController],
   providers: [

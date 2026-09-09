@@ -7,10 +7,22 @@
  *
  * Safe to run repeatedly. Never overwrites an existing admin password.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { AdminRole, PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
 const BCRYPT_COST = 12;
+
+function slugify(input: string): string {
+  return input
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
 
 const prisma = new PrismaClient();
 
@@ -193,12 +205,106 @@ async function seedSingletons(): Promise<void> {
   }
 }
 
+interface SeedMenuItem {
+  name: string;
+  price?: number | null;
+  priceLabel?: string;
+  description?: string;
+  status: string;
+  variants?: { name: string; price: number }[];
+}
+interface SeedMenuCategory {
+  id: string;
+  group: 'FOOD' | 'BEVERAGES' | 'BAR';
+  name: string;
+  items: SeedMenuItem[];
+}
+
+// Imports the real menu (extracted from the site's menu-data.ts) — but only
+// on an empty database, so it never overwrites edits made in the admin panel.
+async function seedMenu(): Promise<void> {
+  const existing = await prisma.menuCategory.count();
+  if (existing > 0) {
+    console.log(`  · menu: ${existing} categories already present — skipped.`);
+    return;
+  }
+
+  let raw: SeedMenuCategory[];
+  try {
+    raw = JSON.parse(
+      readFileSync(join(__dirname, 'seed-data', 'menu.json'), 'utf8'),
+    );
+  } catch {
+    console.warn('  · menu: seed-data/menu.json not found — skipped.');
+    return;
+  }
+
+  const mapStatus = (s: string) =>
+    s === 'VERIFIED' ? 'PUBLISHED' : ('DRAFT' as const);
+
+  let catCount = 0;
+  let itemCount = 0;
+
+  for (const [ci, cat] of raw.entries()) {
+    const catSlug = slugify(cat.id || cat.name) || `category-${ci + 1}`;
+    const category = await prisma.menuCategory.create({
+      data: {
+        name: cat.name,
+        slug: catSlug,
+        group: cat.group,
+        status: 'PUBLISHED',
+        sortOrder: ci,
+      },
+    });
+    catCount += 1;
+
+    const usedSlugs = new Set<string>();
+    for (const [ii, item] of cat.items.entries()) {
+      let slug = slugify(item.name) || `item-${ii + 1}`;
+      let n = 1;
+      while (usedSlugs.has(slug)) {
+        n += 1;
+        slug = `${slugify(item.name)}-${n}`;
+      }
+      usedSlugs.add(slug);
+
+      await prisma.menuItem.create({
+        data: {
+          categoryId: category.id,
+          name: item.name,
+          slug,
+          description: item.description?.trim() || null,
+          price: item.price ?? null,
+          priceLabel: item.priceLabel?.trim() || null,
+          status: mapStatus(item.status),
+          sortOrder: ii,
+          variants: item.variants?.length
+            ? {
+                create: item.variants.map((v, vi) => ({
+                  label: v.name,
+                  price: v.price,
+                  sortOrder: vi,
+                })),
+              }
+            : undefined,
+        },
+      });
+      itemCount += 1;
+    }
+  }
+
+  console.log(
+    `  · menu: imported ${catCount} categories, ${itemCount} items.`,
+  );
+}
+
 async function main(): Promise<void> {
   console.log('Seeding Harmony database…');
   const idByKey = await seedPermissions();
   await seedRoleGrants(idByKey);
   await seedSuperAdmin();
   await seedSingletons();
+  await seedMenu();
   console.log('Seed complete.');
 }
 
