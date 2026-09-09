@@ -47,6 +47,7 @@ import RedeemRoundedIcon from '@mui/icons-material/RedeemRounded';
 
 import {
   menuData,
+  type MenuCategory,
   type MenuGroup,
   type MenuItem,
 } from '@/data/menu-data';
@@ -116,7 +117,7 @@ function formatPrice(
   )}`;
 }
 
-function getVisibleCategories() {
+function getVisibleCategories(): MenuCategory[] {
   return menuData
     .map((category) => ({
       ...category,
@@ -140,14 +141,27 @@ function getVisibleCategories() {
    MAIN
 ========================================================= */
 
-export default function MenuExperience() {
+type MenuExperienceProps = {
+  /**
+   * Published menu, provided by the page from the API.
+   * Falls back to the bundled static menu when omitted.
+   */
+  categories?: MenuCategory[];
+};
+
+export default function MenuExperience({
+  categories: categoriesProp,
+}: MenuExperienceProps) {
   const theme = useTheme();
 
   const categories =
-    useMemo(
+    useMemo<MenuCategory[]>(
       () =>
-        getVisibleCategories(),
-      [],
+        categoriesProp &&
+        categoriesProp.length > 0
+          ? categoriesProp
+          : getVisibleCategories(),
+      [categoriesProp],
     );
 
   const flatItems =

@@ -9,6 +9,7 @@ import HeroSection from '@/components/home/hero-section';
 import LocationContact from '@/components/home/location-contact';
 import ReservationCta from '@/components/home/reservation-cta';
 import ReviewsShowcase from '@/components/home/reviews-showcase';
+import { getMenuCategories } from '@/lib/api/menu';
 
 export const metadata: Metadata = {
   description:
@@ -24,7 +25,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const menuCategories = await getMenuCategories();
+
   return (
     <main>
       <HeroSection />
@@ -33,7 +36,7 @@ export default function Home() {
 
       <AnimatedExperience />
 
-      <FeaturedMenu />
+      <FeaturedMenu menuSource={menuCategories} />
 
       <EventsShowcase />
 
