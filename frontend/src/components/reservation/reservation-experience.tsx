@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -23,6 +24,7 @@ import {
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 
@@ -49,6 +51,13 @@ import {
 import { getReservationBenefits } from '@/data/marketing';
 import FeatureIcon from '@/components/common/feature-icon';
 
+import {
+  fetchAvailability,
+  submitReservation,
+  type Availability,
+  type ReservationResult,
+} from '@/lib/api/reservations';
+
 const timeSlots = getReservationTimeSlots();
 
 const maxGuests = getReservationMaxGuests();
@@ -63,9 +72,18 @@ export default function ReservationExperience() {
   const theme = useTheme();
 
   const [
-    requestReady,
-    setRequestReady,
-  ] = useState(false);
+    submitResult,
+    setSubmitResult,
+  ] = useState<ReservationResult | null>(
+    null,
+  );
+
+  const [
+    availability,
+    setAvailability,
+  ] = useState<Availability | null>(
+    null,
+  );
 
   const today =
     useMemo(
@@ -110,77 +128,127 @@ export default function ReservationExperience() {
       name: 'note',
     }) ?? '';
 
+  const selectedDate =
+    useWatch({
+      control,
+      name: 'date',
+    }) ?? '';
+
+  // Ask the API which slots are still open for the chosen date. When the
+  // API is not connected this stays null and the static slot list is used.
+  useEffect(() => {
+    let active = true;
+
+    async function syncAvailability() {
+      const isValidDate =
+        /^\d{4}-\d{2}-\d{2}$/.test(
+          selectedDate,
+        );
+
+      const next =
+        isValidDate
+          ? await fetchAvailability(
+              selectedDate,
+            )
+          : null;
+
+      if (active) {
+        setAvailability(next);
+      }
+    }
+
+    void syncAvailability();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedDate]);
+
+  // Slot options shown in the dropdown: API-driven when available, with
+  // full slots disabled; otherwise the bundled fixed list.
+  const slotOptions =
+    useMemo(() => {
+      if (
+        availability &&
+        availability.slots.length > 0
+      ) {
+        return availability.slots.map(
+          (slot) => ({
+            value: slot.time,
+            label:
+              slot.available
+                ? slot.time
+                : `${slot.time} — full`,
+            disabled:
+              !slot.available,
+          }),
+        );
+      }
+
+      return timeSlots.map(
+        (time) => ({
+          value: time,
+          label: time,
+          disabled: false,
+        }),
+      );
+    }, [availability]);
+
+  const guestCeiling =
+    availability
+      ?.maxGuestsPerReservation ??
+    maxGuests;
+
+  const dateClosedReason =
+    availability &&
+    !availability.open
+      ? availability.closedReason ??
+        'No tables are available on this date.'
+      : '';
+
   async function onSubmit(
     data:
       ReservationFormValues,
   ) {
-    setRequestReady(false);
+    setSubmitResult(null);
 
-    const reservationPayload = {
-      fullName:
-        data.fullName.trim(),
+    const result =
+      await submitReservation({
+        fullName:
+          data.fullName.trim(),
 
-      phone:
-        data.phone.trim(),
+        phone:
+          data.phone.trim(),
 
-      date:
-        data.date,
+        date:
+          data.date,
 
-      time:
-        data.time,
+        time:
+          data.time,
 
-      guests:
-        Number(
-          data.guests,
-        ),
-
-      note:
-        data.note?.trim() ||
-        null,
-    };
-
-    console.log(
-      'Reservation payload:',
-      reservationPayload,
-    );
-
-    /*
-      FUTURE PRODUCTION API:
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/reservations`,
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type': 'application/json',
-          },
-
-          body: JSON.stringify(
-            reservationPayload,
+        guests:
+          Number(
+            data.guests,
           ),
-        },
-      );
 
-      if (!response.ok) {
-        throw new Error(
-          'Unable to create reservation request',
+        note:
+          data.note?.trim() ||
+          null,
+      });
+
+    setSubmitResult(result);
+
+    // A fresh slot count after a successful booking.
+    if (
+      result.ok &&
+      result.connected
+    ) {
+      const refreshed =
+        await fetchAvailability(
+          data.date,
         );
-      }
-
-      Backend responsibilities:
-      - validate again
-      - sanitize payload
-      - check slot availability
-      - check restaurant capacity
-      - prevent overbooking
-      - create reservation number
-      - status = PENDING
-      - save PostgreSQL
-      - show request in Admin Dashboard
-    */
-
-    setRequestReady(true);
+      setAvailability(refreshed);
+    }
   }
 
   return (
@@ -875,23 +943,31 @@ export default function ReservationExperience() {
                         required
                         error={Boolean(
                           errors.time,
-                        )}
+                        ) ||
+                          Boolean(
+                            dateClosedReason,
+                          )}
                         helperText={
                           errors.time
-                            ?.message
+                            ?.message ||
+                          dateClosedReason ||
+                          undefined
                         }
                       >
                         <MenuItem value="">
                           Select time
                         </MenuItem>
 
-                        {timeSlots.map(
-                          (time) => (
+                        {slotOptions.map(
+                          (slot) => (
                             <MenuItem
-                              key={time}
-                              value={time}
+                              key={slot.value}
+                              value={slot.value}
+                              disabled={
+                                slot.disabled
+                              }
                             >
-                              {time}
+                              {slot.label}
                             </MenuItem>
                           ),
                         )}
@@ -921,7 +997,7 @@ export default function ReservationExperience() {
                       }
                     >
                       {Array.from(
-                        { length: maxGuests },
+                        { length: guestCeiling },
                         (_, index) =>
                           index + 1,
                       ).map(
@@ -972,9 +1048,87 @@ export default function ReservationExperience() {
                   }}
                 />
 
-                {/* FRONTEND READY STATE */}
+                {/* SUBMIT RESULT */}
 
-                {requestReady ? (
+                {submitResult &&
+                submitResult.ok === false ? (
+                  <Box
+                    role="alert"
+                    sx={{
+                      p: 1.5,
+
+                      display:
+                        'grid',
+
+                      gridTemplateColumns:
+                        '28px minmax(0,1fr)',
+
+                      gap: 1,
+
+                      bgcolor:
+                        alpha(
+                          theme
+                            .palette
+                            .error
+                            .main,
+                          0.07,
+                        ),
+
+                      border:
+                        '1px solid',
+
+                      borderColor:
+                        alpha(
+                          theme
+                            .palette
+                            .error
+                            .main,
+                          0.24,
+                        ),
+
+                      borderRadius:
+                        1.5,
+                    }}
+                  >
+                    <ErrorOutlineRoundedIcon
+                      aria-hidden
+                      sx={{
+                        color:
+                          'error.main',
+                      }}
+                    />
+
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight:
+                            800,
+                        }}
+                      >
+                        We couldn’t send that request.
+                      </Typography>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display:
+                            'block',
+
+                          mt: 0.25,
+
+                          color:
+                            'text.secondary',
+                        }}
+                      >
+                        {submitResult.error}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ) : null}
+
+                {submitResult &&
+                submitResult.ok ? (
                   <Box
                     role="status"
                     sx={{
@@ -1021,32 +1175,68 @@ export default function ReservationExperience() {
                       }}
                     />
 
-                    <Box>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{
-                          fontWeight:
-                            800,
-                        }}
-                      >
-                        Reservation details are ready.
-                      </Typography>
+                    {submitResult.connected ? (
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight:
+                              800,
+                          }}
+                        >
+                          Request received — reference{' '}
+                          {submitResult.reference}
+                        </Typography>
 
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          display:
-                            'block',
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display:
+                              'block',
 
-                          mt: 0.25,
+                            mt: 0.25,
 
-                          color:
-                            'text.secondary',
-                        }}
-                      >
-                        Online booking will become active when Harmony’s reservation service is connected.
-                      </Typography>
-                    </Box>
+                            color:
+                              'text.secondary',
+                          }}
+                        >
+                          Your table for{' '}
+                          {submitResult.guests}{' '}
+                          on {submitResult.date} at{' '}
+                          {submitResult.time} is
+                          pending. Harmony will call
+                          to confirm. Please keep
+                          your reference number.
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight:
+                              800,
+                          }}
+                        >
+                          Reservation details are ready.
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display:
+                              'block',
+
+                            mt: 0.25,
+
+                            color:
+                              'text.secondary',
+                          }}
+                        >
+                          Online booking will become active when Harmony’s reservation service is connected.
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 ) : null}
 
