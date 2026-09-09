@@ -397,6 +397,7 @@ export default function ReviewsShowcase({
   return (
     <Box
       component="section"
+      id="reviews"
       aria-labelledby="reviews-showcase-title"
       onMouseEnter={() =>
         setIsPaused(true)

@@ -6,6 +6,15 @@ import {
 export const dynamic =
   'force-dynamic';
 
+export const runtime = 'nodejs';
+
+/*
+ * Upstream is the public OSRM demo server. It has no SLA and is
+ * rate limited, so every call is bounded by a hard timeout and
+ * failures degrade gracefully on the client.
+ */
+const UPSTREAM_TIMEOUT_MS = 8000;
+
 export async function GET(
   request: NextRequest,
 ) {
@@ -54,6 +63,9 @@ export async function GET(
     const response =
       await fetch(url, {
         cache: 'no-store',
+        signal: AbortSignal.timeout(
+          UPSTREAM_TIMEOUT_MS,
+        ),
       });
 
     if (!response.ok) {

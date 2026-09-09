@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 
 import {
@@ -23,6 +22,10 @@ import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded
 import type {
   SvgIconComponent,
 } from '@mui/icons-material';
+
+import ImageCarousel, {
+  type CarouselSlide,
+} from '@/components/common/image-carousel';
 
 /* =========================================================
    TYPES
@@ -64,6 +67,15 @@ type HeroContent = {
   imageAlt: string;
 
   imagePosition?: string;
+
+  /*
+   * Optional rotating hero photos (max 5). When present the
+   * right-hand image becomes a gentle sliding carousel; when
+   * empty it falls back to the single `image` above.
+   *
+   * Later: populated by the admin-managed homepage API.
+   */
+  images?: CarouselSlide[];
 
   imageLabel?: string;
 
@@ -112,6 +124,38 @@ const heroContent: HeroContent = {
 
   imagePosition:
     'center',
+
+  /*
+   * TEST DATA — swap for the admin/API payload later.
+   * Up to 5 photos; the carousel clamps anything beyond that.
+   */
+  images: [
+    {
+      src: '/images/home/harmony-hero-dining.jpg',
+      alt: 'Guests dining at Harmony Dining & Event Center',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-hero-restaurant.jpg',
+      alt: 'The Harmony restaurant interior',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-gallery-dining-hall.jpg',
+      alt: 'Harmony dining hall set for service',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-banquet-hall.jpg',
+      alt: 'Harmony banquet hall arranged for an event',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-experience-event.jpg',
+      alt: 'A celebration underway at Harmony',
+      position: 'center',
+    },
+  ],
 
   imageLabel:
     'Harmony Experience',
@@ -185,6 +229,8 @@ export default function HeroSection() {
     imagePosition =
       'center',
 
+    images = [],
+
     imageLabel,
 
     imageCaption,
@@ -202,6 +248,29 @@ export default function HeroSection() {
           action.href?.trim(),
         ),
     );
+
+  /* Validated hero photos, capped at 5, with a single-image fallback. */
+  const heroSlides: CarouselSlide[] = (() => {
+    const cleaned = images
+      .filter(
+        (slide) =>
+          Boolean(slide?.src?.trim()) &&
+          Boolean(slide?.alt?.trim()),
+      )
+      .slice(0, 5);
+
+    if (cleaned.length > 0) {
+      return cleaned;
+    }
+
+    return [
+      {
+        src: image,
+        alt: imageAlt,
+        position: imagePosition,
+      },
+    ];
+  })();
 
   return (
     <Box
@@ -862,26 +931,9 @@ export default function HeroSection() {
                     .shadows[12],
             }}
           >
-            <Image
-              src={
-                image
-              }
-              alt={
-                imageAlt
-              }
-              fill
-              priority
-              quality={
-                80
-              }
+            <ImageCarousel
+              slides={heroSlides}
               sizes="(max-width: 1199px) 100vw, 55vw"
-              style={{
-                objectFit:
-                  'cover',
-
-                objectPosition:
-                  imagePosition,
-              }}
             />
 
             {/* IMAGE GRADIENT */}

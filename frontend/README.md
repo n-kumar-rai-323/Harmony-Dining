@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Harmony Dining & Event Center — Frontend
 
-## Getting Started
+Marketing and bookings website for Harmony Dining & Event Center, built with
+the Next.js App Router.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, Turbopack)
+- **React 19**
+- **MUI 9** with a custom multi-preset theme (`src/theme/`)
+- **react-hook-form** + **yup** for form validation
+- **react-leaflet** / **Leaflet** for the location map
+- **motion** for scroll animation
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # then fill in the values
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app runs at http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable               | Required | Description                                                        |
+| ---------------------- | -------- | ------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SITE_URL` | Prod     | Public origin, used for canonical URLs, Open Graph, sitemap/robots |
+| `NEXT_PUBLIC_API_URL`  | No       | Base URL of the Harmony backend API (bookings). Blank until ready. |
 
-## Learn More
+Access them through `src/lib/env.ts`, never `process.env` directly.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command          | Description                        |
+| ---------------- | --------------------------------- |
+| `pnpm dev`       | Start the dev server              |
+| `pnpm build`     | Production build                  |
+| `pnpm start`     | Serve the production build        |
+| `pnpm lint`      | ESLint                            |
+| `pnpm lint:fix`  | ESLint with autofix              |
+| `pnpm typecheck` | `tsc --noEmit`                    |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project layout
 
-## Deploy on Vercel
+```
+src/
+  app/                 Routes, layout, metadata, error/not-found, sitemap, robots
+  components/           Feature components grouped by area (home, menu, events, …)
+  data/                Static content (menu data)
+  lib/                 Framework-agnostic helpers (env, date)
+  theme/               MUI theme tokens, factory, provider, pre-hydration script
+  validation/          yup schemas shared by forms
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Bookings are frontend-only for now.** The reservation and event-enquiry
+  forms validate and show a local confirmation state; they do not post
+  anywhere until `NEXT_PUBLIC_API_URL` and the backend are connected.
+- **`/privacy` and `/terms`** contain starter copy and must be reviewed by
+  legal counsel before launch.
+- **`/contact`** has empty `phone`/`email` fields in `CONTACT_DETAILS` — fill
+  them in and those cards appear automatically.
+- The `/api/route` handler proxies the public OSRM demo server for driving
+  directions; swap it for a hosted routing provider before heavy production use.

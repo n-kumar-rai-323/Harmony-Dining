@@ -217,13 +217,13 @@ const initialFooterContent: FooterContent = {
       {
         id: 'offers',
         label: 'Offers',
-        href: '/offers',
+        href: '/menu',
         enabled: true,
       },
       {
         id: 'reviews',
         label: 'Reviews',
-        href: '/reviews',
+        href: '/#reviews',
         enabled: true,
       },
       {
@@ -241,7 +241,7 @@ const initialFooterContent: FooterContent = {
 
     location: {
       enabled: true,
-      primary: 'Kathmandu, Nepal',
+      primary: 'Kumaripati, Lalitpur',
       secondary:
         'View location & directions',
       href: '/#location',

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 import {
   Cormorant_Garamond,
@@ -11,8 +11,10 @@ import './globals.css';
 import Footer from '@/components/layout/footer';
 import Navbar from '@/components/layout/navbar';
 import SitePromoOverlay from '@/components/promotions/site-promo-overlay';
-import ThemeRegistry from '@/theme/theme-provider';
 import SocialFloatingBar from '@/components/layout/social-floating-bar';
+import ThemeInitScript from '@/theme/theme-init-script';
+import ThemeRegistry from '@/theme/theme-provider';
+import { env } from '@/lib/env';
 
 /* =========================================================
    FONTS
@@ -35,19 +37,88 @@ const cormorant = Cormorant_Garamond({
    GLOBAL SEO METADATA
 ========================================================= */
 
+const SITE_NAME = 'Harmony Dining & Event Center';
+const SITE_DESCRIPTION =
+  'Premium dining, events, reservations, and memorable experiences at Harmony Dining & Event Center.';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(env.siteUrl),
+
   title: {
-    default: 'Harmony Dining & Event Center',
-    template: '%s | Harmony Dining & Event Center',
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
 
-  description:
-    'Premium dining, events, reservations, and memorable experiences at Harmony Dining & Event Center.',
+  description: SITE_DESCRIPTION,
 
-  applicationName:
-    'Harmony Dining & Event Center',
+  applicationName: SITE_NAME,
 
   category: 'Restaurant',
+
+  keywords: [
+    'Harmony Dining',
+    'event center',
+    'restaurant',
+    'private events',
+    'table reservation',
+    'Kathmandu dining',
+  ],
+
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
+
+  alternates: {
+    canonical: '/',
+  },
+
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: '/',
+    locale: 'en_US',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
+
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/images/harmony-logo.jpeg',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  colorScheme: 'light dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FAF8F3' },
+    { media: '(prefers-color-scheme: dark)', color: '#171A18' },
+  ],
 };
 
 /* =========================================================
@@ -63,18 +134,21 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${cormorant.variable}`}
+      suppressHydrationWarning
     >
       <body>
+        <ThemeInitScript />
+
         <ThemeRegistry>
-            {/* GLOBAL FIRST-VISIT PROMOTIONAL OVERLAY */}
-            <SitePromoOverlay />
+          {/* Global first-visit promotional overlay */}
+          <SitePromoOverlay />
 
-            <Navbar />
-<SocialFloatingBar />
-            {children}
+          <Navbar />
+          <SocialFloatingBar />
 
-            <Footer />
-          
+          {children}
+
+          <Footer />
         </ThemeRegistry>
       </body>
     </html>

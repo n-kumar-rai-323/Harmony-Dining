@@ -102,7 +102,7 @@ const initialLocationContent: LocationContactContent = {
       'Harmony Dining & Event Center',
 
     address:
-      'Kathmandu, Nepal',
+      'Kumaripati, Lalitpur',
 
     latitude: 27.6718846,
 

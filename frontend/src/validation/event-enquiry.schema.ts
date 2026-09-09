@@ -1,24 +1,6 @@
 import * as yup from 'yup';
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function getTodayLocalDate() {
-  const now = new Date();
-
-  const year = now.getFullYear();
-
-  const month = String(
-    now.getMonth() + 1,
-  ).padStart(2, '0');
-
-  const day = String(
-    now.getDate(),
-  ).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
+import { isNotInPast } from '@/lib/date';
 
 /* =========================================================
    EVENT ENQUIRY SCHEMA
@@ -74,16 +56,7 @@ export const eventEnquirySchema = yup
       .test(
         'not-in-past',
         'Preferred date cannot be in the past',
-        (value) => {
-          if (!value) {
-            return false;
-          }
-
-          return (
-            value >=
-            getTodayLocalDate()
-          );
-        },
+        (value) => isNotInPast(value),
       ),
 
     alternativeDate: yup
@@ -92,16 +65,7 @@ export const eventEnquirySchema = yup
       .test(
         'not-in-past',
         'Alternative date cannot be in the past',
-        (value) => {
-          if (!value) {
-            return true;
-          }
-
-          return (
-            value >=
-            getTodayLocalDate()
-          );
-        },
+        (value) => !value || isNotInPast(value),
       )
       .test(
         'different-from-preferred',

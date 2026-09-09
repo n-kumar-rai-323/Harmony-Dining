@@ -24,199 +24,16 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import CollectionsRoundedIcon from '@mui/icons-material/CollectionsRounded';
 import ZoomInRoundedIcon from '@mui/icons-material/ZoomInRounded';
 
-/* =========================================================
-   TYPES
-========================================================= */
+import {
+  getGalleryCategories,
+  getGalleryCategoryLabel,
+  getGalleryItems,
+  type GalleryCategory,
+  type GalleryItem,
+} from '@/data/gallery';
 
-type GalleryCategory =
-  | 'ALL'
-  | 'DINING'
-  | 'EVENTS'
-  | 'SPACES'
-  | 'TEAM'
-  | 'KITCHEN';
-
-type PublicGalleryCategory =
-  Exclude<
-    GalleryCategory,
-    'ALL'
-  >;
-
-type GalleryItem = {
-  id: string;
-  title: string;
-  description: string;
-  category: PublicGalleryCategory;
-  image: string;
-  alt: string;
-  sortOrder: number;
-};
-
-/* =========================================================
-   INITIAL DEVELOPMENT DATA
-
-   Future:
-   Harmony Admin
-        ↓
-   NestJS Gallery API
-        ↓
-   PostgreSQL + Object Storage
-        ↓
-   GET /gallery/public
-========================================================= */
-
-const galleryItems: GalleryItem[] = [
-  {
-    id: 'gallery-1',
-    title: 'Harmony Dining Hall',
-    description:
-      'A welcoming dining space prepared for guests and gatherings.',
-    category: 'DINING',
-    image:
-      '/images/home/harmony-gallery-dining-hall.jpg',
-    alt: 'Harmony dining hall',
-    sortOrder: 1,
-  },
-  {
-    id: 'gallery-2',
-    title: 'Celebration Setup',
-    description:
-      'Harmony event space prepared for memorable celebrations.',
-    category: 'EVENTS',
-    image:
-      '/images/home/harmony-experience-event.jpg',
-    alt:
-      'Harmony event celebration setup',
-    sortOrder: 2,
-  },
-  {
-    id: 'gallery-3',
-    title: 'Banquet Hall',
-    description:
-      'A flexible banquet space for larger gatherings and occasions.',
-    category: 'SPACES',
-    image:
-      '/images/home/harmony-banquet-hall.jpg',
-    alt: 'Harmony banquet hall',
-    sortOrder: 3,
-  },
-  {
-    id: 'gallery-4',
-    title: 'Dining Experience',
-    description:
-      'The atmosphere and hospitality behind the Harmony dining experience.',
-    category: 'DINING',
-    image:
-      '/images/home/harmony-dining-experience.jpg',
-    alt:
-      'Harmony dining experience',
-    sortOrder: 4,
-  },
-  {
-    id: 'gallery-5',
-    title: 'Harmony Terrace',
-    description:
-      'A comfortable outdoor area for relaxed dining and gatherings.',
-    category: 'SPACES',
-    image:
-      '/images/home/harmony-gallery-terrace.jpg',
-    alt: 'Harmony terrace',
-    sortOrder: 5,
-  },
-  {
-    id: 'gallery-6',
-    title: 'Harmony Kitchen',
-    description:
-      'A look inside the kitchen where Harmony dishes are prepared.',
-    category: 'KITCHEN',
-    image:
-      '/images/home/harmony-gallery-kitchen.jpg',
-    alt:
-      'Harmony restaurant kitchen',
-    sortOrder: 6,
-  },
-  {
-    id: 'gallery-7',
-    title: 'Harmony Team',
-    description:
-      'The people helping create the Harmony dining and hospitality experience.',
-    category: 'TEAM',
-    image:
-      '/images/home/harmony-experience-team.jpg',
-    alt:
-      'Harmony restaurant team',
-    sortOrder: 7,
-  },
-  {
-    id: 'gallery-8',
-    title: 'Kitchen Experience',
-    description:
-      'Behind the scenes of food preparation at Harmony.',
-    category: 'KITCHEN',
-    image:
-      '/images/home/harmony-experience-kitchen.jpg',
-    alt:
-      'Harmony kitchen experience',
-    sortOrder: 8,
-  },
-  {
-    id: 'gallery-9',
-    title: 'Harmony Entrance',
-    description:
-      'The welcoming entrance to Harmony Dining & Event Center.',
-    category: 'SPACES',
-    image:
-      '/images/home/harmony-gallery-entrance.jpg',
-    alt:
-      'Harmony restaurant entrance',
-    sortOrder: 9,
-  },
-];
-
-/* =========================================================
-   CATEGORIES
-========================================================= */
-
-const categories: {
-  value: GalleryCategory;
-  label: string;
-}[] = [
-  {
-    value: 'ALL',
-    label: 'All',
-  },
-  {
-    value: 'DINING',
-    label: 'Dining',
-  },
-  {
-    value: 'EVENTS',
-    label: 'Events',
-  },
-  {
-    value: 'SPACES',
-    label: 'Spaces',
-  },
-  {
-    value: 'TEAM',
-    label: 'Team',
-  },
-  {
-    value: 'KITCHEN',
-    label: 'Kitchen',
-  },
-];
-
-const categoryLabels: Record<
-  PublicGalleryCategory,
-  string
-> = {
-  DINING: 'Dining',
-  EVENTS: 'Events',
-  SPACES: 'Spaces',
-  TEAM: 'Team',
-  KITCHEN: 'Kitchen',
-};
+const galleryItems = getGalleryItems();
+const categories = getGalleryCategories();
 
 /* =========================================================
    COMPONENT
@@ -260,6 +77,41 @@ export default function GalleryExperience() {
           b.sortOrder,
       );
     }, [category]);
+
+  /* Related photos shown under the lightbox caption:
+     same category first, otherwise the rest of the gallery. */
+  const relatedItems =
+    useMemo(() => {
+      if (!selectedImage) {
+        return [];
+      }
+
+      const sameCategory =
+        galleryItems.filter(
+          (item) =>
+            item.category ===
+              selectedImage.category &&
+            item.id !==
+              selectedImage.id,
+        );
+
+      const pool =
+        sameCategory.length >= 2
+          ? sameCategory
+          : galleryItems.filter(
+              (item) =>
+                item.id !==
+                selectedImage.id,
+            );
+
+      return [...pool]
+        .sort(
+          (a, b) =>
+            a.sortOrder -
+            b.sortOrder,
+        )
+        .slice(0, 8);
+    }, [selectedImage]);
 
   return (
     <>
@@ -779,12 +631,9 @@ export default function GalleryExperience() {
                               1.2,
                           }}
                         >
-                          {
-                            categoryLabels[
-                              item
-                                .category
-                            ]
-                          }
+                          {getGalleryCategoryLabel(
+                            item.category,
+                          )}
                         </Typography>
                       </Box>
                     </Box>
@@ -1077,12 +926,9 @@ export default function GalleryExperience() {
                     'secondary.dark',
                 }}
               >
-                {
-                  categoryLabels[
-                    selectedImage
-                      .category
-                  ]
-                }
+                {getGalleryCategoryLabel(
+                  selectedImage.category,
+                )}
               </Typography>
 
               <Typography
@@ -1115,6 +961,167 @@ export default function GalleryExperience() {
                     .description
                 }
               </Typography>
+
+              {/* RELATED PHOTOS */}
+
+              {relatedItems.length >
+              0 ? (
+                <Box
+                  sx={{
+                    mt: 2.5,
+                  }}
+                >
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      display:
+                        'block',
+
+                      color:
+                        'secondary.dark',
+                    }}
+                  >
+                    Related photos
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      mt: 1,
+
+                      display: 'flex',
+
+                      gap: 1,
+
+                      overflowX:
+                        'auto',
+
+                      pb: 0.5,
+
+                      scrollbarWidth:
+                        'none',
+
+                      '&::-webkit-scrollbar':
+                        {
+                          display:
+                            'none',
+                        },
+                    }}
+                  >
+                    {relatedItems.map(
+                      (item) => (
+                        <Box
+                          key={
+                            item.id
+                          }
+                          component="button"
+                          type="button"
+                          aria-label={`View ${item.title}`}
+                          onClick={() =>
+                            setSelectedImage(
+                              item,
+                            )
+                          }
+                          sx={{
+                            position:
+                              'relative',
+
+                            flex:
+                              '0 0 auto',
+
+                            width: {
+                              xs: 88,
+                              sm: 108,
+                            },
+
+                            height: {
+                              xs: 62,
+                              sm: 74,
+                            },
+
+                            p: 0,
+
+                            border:
+                              '2px solid',
+
+                            borderColor:
+                              'transparent',
+
+                            borderRadius:
+                              1,
+
+                            overflow:
+                              'hidden',
+
+                            cursor:
+                              'pointer',
+
+                            appearance:
+                              'none',
+
+                            bgcolor:
+                              'action.hover',
+
+                            transition:
+                              'border-color 160ms ease, transform 160ms ease',
+
+                            '&:hover':
+                              {
+                                transform:
+                                  'translateY(-2px)',
+
+                                borderColor:
+                                  'secondary.main',
+                              },
+
+                            '&:focus-visible':
+                              {
+                                outline:
+                                  '2px solid',
+
+                                outlineColor:
+                                  'secondary.main',
+
+                                outlineOffset:
+                                  2,
+                              },
+
+                            '@media (prefers-reduced-motion: reduce)':
+                              {
+                                transition:
+                                  'none',
+
+                                '&:hover':
+                                  {
+                                    transform:
+                                      'none',
+                                  },
+                              },
+                          }}
+                        >
+                          <Image
+                            src={
+                              item.image
+                            }
+                            alt={
+                              item.alt
+                            }
+                            fill
+                            loading="lazy"
+                            quality={
+                              75
+                            }
+                            sizes="108px"
+                            style={{
+                              objectFit:
+                                'cover',
+                            }}
+                          />
+                        </Box>
+                      ),
+                    )}
+                  </Box>
+                </Box>
+              ) : null}
             </Box>
           </DialogContent>
         ) : null}

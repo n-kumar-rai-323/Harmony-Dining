@@ -2,7 +2,9 @@
 
 import {
   useDeferredValue,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -41,7 +43,6 @@ import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRound
 import WorkspacePremiumRoundedIcon from '@mui/icons-material/WorkspacePremiumRounded';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
-import DeliveryDiningRoundedIcon from '@mui/icons-material/DeliveryDiningRounded';
 import RedeemRoundedIcon from '@mui/icons-material/RedeemRounded';
 
 import {
@@ -187,6 +188,14 @@ export default function MenuExperience() {
 
   const deferredSearch =
     useDeferredValue(search);
+
+  const [
+    suggestionsDismissed,
+    setSuggestionsDismissed,
+  ] = useState(false);
+
+  const searchFieldRef =
+    useRef<HTMLDivElement | null>(null);
 
   const [
     group,
@@ -377,6 +386,64 @@ export default function MenuExperience() {
       deferredSearch,
       flatItems,
     ]);
+
+  const showSuggestions =
+    search.trim().length > 0 &&
+    searchSuggestions.length > 0 &&
+    !suggestionsDismissed;
+
+  /* =======================================================
+     DISMISS SUGGESTIONS ON OUTSIDE CLICK / ESCAPE
+  ======================================================= */
+
+  useEffect(() => {
+    if (!showSuggestions) {
+      return;
+    }
+
+    function handlePointerDown(
+      event: PointerEvent,
+    ) {
+      if (
+        searchFieldRef.current &&
+        !searchFieldRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setSuggestionsDismissed(true);
+      }
+    }
+
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === 'Escape') {
+        setSuggestionsDismissed(true);
+      }
+    }
+
+    document.addEventListener(
+      'pointerdown',
+      handlePointerDown,
+    );
+
+    document.addEventListener(
+      'keydown',
+      handleKeyDown,
+    );
+
+    return () => {
+      document.removeEventListener(
+        'pointerdown',
+        handlePointerDown,
+      );
+
+      document.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      );
+    };
+  }, [showSuggestions]);
 
   const allMenuActive =
     activeCategory ===
@@ -1208,6 +1275,7 @@ export default function MenuExperience() {
                 {/* SEARCH */}
 
                 <Box
+                  ref={searchFieldRef}
                   sx={{
                     position:
                       'relative',
@@ -1220,12 +1288,16 @@ export default function MenuExperience() {
                     value={search}
                     onChange={(
                       event,
-                    ) =>
+                    ) => {
                       setSearch(
                         event.target
                           .value,
-                      )
-                    }
+                      );
+
+                      setSuggestionsDismissed(
+                        false,
+                      );
+                    }}
                     placeholder="Search menu items..."
                     size="small"
                     slotProps={{
@@ -1275,9 +1347,7 @@ export default function MenuExperience() {
                     }}
                   />
 
-                  {search.trim() &&
-                  searchSuggestions.length >
-                    0 ? (
+                  {showSuggestions ? (
                     <Box
                       role="listbox"
                       aria-label="Menu search suggestions"
@@ -1368,6 +1438,10 @@ export default function MenuExperience() {
 
                                 setGroup(
                                   entry.group,
+                                );
+
+                                setSuggestionsDismissed(
+                                  true,
                                 );
                               }}
                               sx={{
@@ -2160,10 +2234,10 @@ export default function MenuExperience() {
                       ShoppingBagOutlinedIcon,
 
                     title:
-                      'Easy Online Ordering',
+                      'The Full Menu Online',
 
                     text:
-                      'Quick & secure ordering',
+                      'Every dish, drink and bar selection in one place',
                   },
 
                   {
@@ -2179,13 +2253,13 @@ export default function MenuExperience() {
 
                   {
                     icon:
-                      DeliveryDiningRoundedIcon,
+                      RestaurantMenuRoundedIcon,
 
                     title:
-                      'Dine In or Takeaway',
+                      'Dine In & Celebrations',
 
                     text:
-                      'Enjoy Harmony your way',
+                      'One kitchen for everyday meals and events',
                   },
 
                   {
@@ -2193,10 +2267,10 @@ export default function MenuExperience() {
                       RedeemRoundedIcon,
 
                     title:
-                      'Loyalty & Rewards',
+                      'Seasonal Specials',
 
                     text:
-                      'Designed for returning guests',
+                      'Ask our team about the current Harmony special',
                   },
                 ].map(
                   ({

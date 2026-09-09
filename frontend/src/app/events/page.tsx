@@ -23,8 +23,13 @@ import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded
 import SupportAgentRoundedIcon from '@mui/icons-material/SupportAgentRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
+import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 
 import EventEnquiryForm from '@/components/events/event-enquiry-form';
+
+import { getPastEvents } from '@/data/past-events';
+
+import { formatLongDate } from '@/lib/date';
 
 export const metadata: Metadata = {
   title: 'Events',
@@ -66,35 +71,7 @@ const eventTypes = [
   },
 ];
 
-const pastEvents = [
-  {
-    title: 'Birthday Celebration',
-    type: 'Celebration',
-    guests: 'Family & Friends',
-    image:
-      '/images/home/harmony-experience-event.jpg',
-    alt:
-      'Birthday celebration hosted at Harmony',
-  },
-  {
-    title: 'Banquet Gathering',
-    type: 'Private Event',
-    guests: 'Group Gathering',
-    image:
-      '/images/home/harmony-banquet-hall.jpg',
-    alt:
-      'Banquet event setup at Harmony',
-  },
-  {
-    title: 'Dining Celebration',
-    type: 'Dining Event',
-    guests: 'Private Dining',
-    image:
-      '/images/home/harmony-gallery-dining-hall.jpg',
-    alt:
-      'Dining celebration at Harmony',
-  },
-];
+const pastEvents = getPastEvents();
 
 const harmonyBenefits = [
   {
@@ -637,129 +614,246 @@ export default function EventsPage() {
               gap: 2,
             }}
           >
-            {pastEvents.map((event) => (
-              <Box
-                key={event.title}
-                component="article"
-                sx={{
-                  overflow: 'hidden',
+            {pastEvents.map((event) => {
+              const isVideoCover =
+                event.cover.type === 'video';
 
-                  bgcolor:
-                    'background.default',
+              const coverSrc =
+                event.cover.type === 'image'
+                  ? event.cover.src
+                  : event.cover.poster;
 
-                  border: '1px solid',
-                  borderColor: 'divider',
+              return (
+                <Link
+                  key={event.slug}
+                  href={`/events/past/${event.slug}`}
+                  style={{
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    display: 'block',
+                  }}
+                >
+                  <Box
+                    component="article"
+                    sx={{
+                      overflow: 'hidden',
 
-                  borderRadius: 2,
+                      bgcolor:
+                        'background.default',
 
-                  transition:
-                    'transform 180ms ease, box-shadow 180ms ease',
+                      border: '1px solid',
+                      borderColor: 'divider',
 
-                  '&:hover': {
-                    transform:
-                      'translateY(-3px)',
+                      borderRadius: 2,
 
-                    boxShadow: 4,
-                  },
-
-                  '@media (prefers-reduced-motion: reduce)':
-                    {
-                      transition: 'none',
+                      transition:
+                        'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
 
                       '&:hover': {
-                        transform: 'none',
+                        transform:
+                          'translateY(-3px)',
+
+                        boxShadow: 4,
+
+                        borderColor:
+                          'secondary.main',
                       },
-                    },
-                }}
-              >
-                <Box
-                  sx={{
-                    position: 'relative',
 
-                    aspectRatio: {
-                      xs: '16 / 11',
-                      md: '4 / 3',
-                    },
+                      '@media (prefers-reduced-motion: reduce)':
+                        {
+                          transition: 'none',
 
-                    bgcolor: 'action.hover',
-
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Image
-                    src={event.image}
-                    alt={event.alt}
-                    fill
-                    quality={80}
-                    sizes="(max-width: 900px) 100vw, 33vw"
-                    style={{
-                      objectFit: 'cover',
-                    }}
-                  />
-
-                  <Box
-                    aria-hidden
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-
-                      bgcolor: 'primary.dark',
-
-                      opacity: 0.1,
-                    }}
-                  />
-                </Box>
-
-                <Box
-                  sx={{
-                    p: 2.2,
-                  }}
-                >
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      color: 'secondary.dark',
+                          '&:hover': {
+                            transform: 'none',
+                          },
+                        },
                     }}
                   >
-                    {event.type}
-                  </Typography>
-
-                  <Typography
-                    component="h3"
-                    variant="h5"
-                    sx={{
-                      mt: 0.25,
-                    }}
-                  >
-                    {event.title}
-                  </Typography>
-
-                  <Stack
-                    direction="row"
-                    sx={{
-                      mt: 1,
-
-                      alignItems: 'center',
-
-                      gap: 0.7,
-
-                      color: 'text.secondary',
-                    }}
-                  >
-                    <PeopleAltRoundedIcon
-                      aria-hidden
+                    <Box
                       sx={{
-                        fontSize: 18,
-                      }}
-                    />
+                        position: 'relative',
 
-                    <Typography variant="caption">
-                      {event.guests}
-                    </Typography>
-                  </Stack>
-                </Box>
-              </Box>
-            ))}
+                        aspectRatio: {
+                          xs: '16 / 11',
+                          md: '4 / 3',
+                        },
+
+                        bgcolor: 'action.hover',
+
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Image
+                        src={coverSrc}
+                        alt={event.cover.alt}
+                        fill
+                        loading="lazy"
+                        quality={80}
+                        sizes="(max-width: 900px) 100vw, 33vw"
+                        style={{
+                          objectFit: 'cover',
+                        }}
+                      />
+
+                      <Box
+                        aria-hidden
+                        sx={{
+                          position: 'absolute',
+                          inset: 0,
+
+                          bgcolor: 'primary.dark',
+
+                          opacity: isVideoCover
+                            ? 0.26
+                            : 0.1,
+                        }}
+                      />
+
+                      {isVideoCover ? (
+                        <Box
+                          aria-hidden
+                          sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            display: 'grid',
+                            placeItems: 'center',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 52,
+                              height: 52,
+                              display: 'grid',
+                              placeItems: 'center',
+                              borderRadius: '50%',
+                              color:
+                                'primary.contrastText',
+                              bgcolor:
+                                'rgba(6, 42, 31, 0.82)',
+                              border:
+                                '1px solid rgba(216, 188, 130, 0.32)',
+                              backdropFilter:
+                                'blur(8px)',
+                              WebkitBackdropFilter:
+                                'blur(8px)',
+                            }}
+                          >
+                            <PlayArrowRoundedIcon />
+                          </Box>
+                        </Box>
+                      ) : null}
+                    </Box>
+
+                    <Box
+                      sx={{
+                        p: 2.2,
+                      }}
+                    >
+                      <Typography
+                        variant="overline"
+                        sx={{
+                          color: 'secondary.dark',
+                        }}
+                      >
+                        {event.category}
+                      </Typography>
+
+                      <Typography
+                        component="h3"
+                        variant="h5"
+                        sx={{
+                          mt: 0.25,
+                        }}
+                      >
+                        {event.title}
+                      </Typography>
+
+                      <Stack
+                        direction="row"
+                        sx={{
+                          mt: 1,
+
+                          flexWrap: 'wrap',
+
+                          alignItems: 'center',
+
+                          gap: 1.4,
+
+                          color: 'text.secondary',
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          sx={{
+                            alignItems: 'center',
+                            gap: 0.7,
+                          }}
+                        >
+                          <CalendarMonthRoundedIcon
+                            aria-hidden
+                            sx={{ fontSize: 18 }}
+                          />
+
+                          <Typography variant="caption">
+                            {formatLongDate(
+                              event.date,
+                            )}
+                          </Typography>
+                        </Stack>
+
+                        {event.guests ? (
+                          <Stack
+                            direction="row"
+                            sx={{
+                              alignItems:
+                                'center',
+                              gap: 0.7,
+                            }}
+                          >
+                            <PeopleAltRoundedIcon
+                              aria-hidden
+                              sx={{
+                                fontSize: 18,
+                              }}
+                            />
+
+                            <Typography variant="caption">
+                              {event.guests}
+                            </Typography>
+                          </Stack>
+                        ) : null}
+                      </Stack>
+
+                      <Stack
+                        direction="row"
+                        sx={{
+                          mt: 1.4,
+
+                          alignItems: 'center',
+
+                          gap: 0.5,
+
+                          color: 'secondary.dark',
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{ fontWeight: 800 }}
+                        >
+                          {isVideoCover
+                            ? 'Watch highlights'
+                            : 'View photos'}
+                        </Typography>
+
+                        <ArrowForwardRoundedIcon
+                          sx={{ fontSize: 16 }}
+                        />
+                      </Stack>
+                    </Box>
+                  </Box>
+                </Link>
+              );
+            })}
           </Box>
 
           <Box

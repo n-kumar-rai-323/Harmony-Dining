@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 
 import {
@@ -16,6 +15,9 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 
 import type { SvgIconComponent } from '@mui/icons-material';
+
+import PhotoCollage from '@/components/common/photo-collage';
+import type { CarouselSlide } from '@/components/common/image-carousel';
 
 /* =========================================================
    TYPES
@@ -53,6 +55,15 @@ type DiningExperienceContent = {
   image: string;
   imageAlt: string;
   imagePosition?: string;
+
+  /*
+   * Optional rotating photos (max 5). When present the image
+   * becomes a gentle sliding carousel with arrow controls;
+   * when empty it falls back to the single `image` above.
+   *
+   * Later: populated by the admin-managed homepage API.
+   */
+  images?: CarouselSlide[];
 
   detail?: DiningDetail;
 
@@ -106,6 +117,38 @@ const diningContent: DiningExperienceContent = {
 
   imagePosition: 'center',
 
+  /*
+   * TEST DATA — swap for the admin/API payload later.
+   * Up to 5 photos; the carousel clamps anything beyond that.
+   */
+  images: [
+    {
+      src: '/images/home/harmony-dining-experience.jpg',
+      alt: 'Warm dining environment at Harmony Dining & Event Center',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-experience-team.jpg',
+      alt: 'The Harmony team preparing for service',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-experience-kitchen.jpg',
+      alt: 'Inside the Harmony kitchen',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-gallery-terrace.jpg',
+      alt: 'Harmony terrace seating',
+      position: 'center',
+    },
+    {
+      src: '/images/home/harmony-gallery-entrance.jpg',
+      alt: 'Entrance to Harmony Dining & Event Center',
+      position: 'center',
+    },
+  ],
+
   detail: {
     title: 'Dining',
     subtitle: 'Premium Space',
@@ -132,9 +175,34 @@ export default function DiningExperience() {
     imageAlt,
     imagePosition = 'center',
 
+    images = [],
+
     detail,
     cta,
   } = diningContent;
+
+  /* Validated photos, capped at 5, with a single-image fallback. */
+  const diningSlides: CarouselSlide[] = (() => {
+    const cleaned = images
+      .filter(
+        (slide) =>
+          Boolean(slide?.src?.trim()) &&
+          Boolean(slide?.alt?.trim()),
+      )
+      .slice(0, 5);
+
+    if (cleaned.length > 0) {
+      return cleaned;
+    }
+
+    return [
+      {
+        src: image,
+        alt: imageAlt,
+        position: imagePosition,
+      },
+    ];
+  })();
 
   const DetailIcon = detail?.icon;
 
@@ -220,41 +288,10 @@ export default function DiningExperience() {
                 theme.shadows[10],
             }}
           >
-            <Image
-              src={image}
-              alt={imageAlt}
-              fill
-              quality={75}
-              sizes="(max-width: 1199px) 100vw, 52vw"
-              style={{
-                objectFit: 'cover',
-                objectPosition: imagePosition,
-              }}
-            />
-
-            <Box
-              aria-hidden
-              sx={{
-                position: 'absolute',
-
-                inset: 0,
-
-                background: (theme) => `
-                  linear-gradient(
-                    180deg,
-                    ${alpha(
-                      theme.palette.primary.dark,
-                      0,
-                    )} 58%,
-                    ${alpha(
-                      theme.palette.primary.dark,
-                      0.2,
-                    )} 100%
-                  )
-                `,
-
-                pointerEvents: 'none',
-              }}
+            <PhotoCollage
+              photos={diningSlides}
+              sizes="(max-width: 899px) 100vw, (max-width: 1199px) 60vw, 32vw"
+              thumbSizes="(max-width: 899px) 45vw, 16vw"
             />
           </Box>
 

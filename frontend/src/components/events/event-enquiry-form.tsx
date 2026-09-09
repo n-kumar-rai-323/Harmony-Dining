@@ -23,6 +23,7 @@ import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
 
 import {
+  Controller,
   useForm,
   useWatch,
 } from 'react-hook-form';
@@ -35,6 +36,8 @@ import {
   eventEnquirySchema,
   type EventEnquiryFormValues,
 } from '@/validation/event-enquiry.schema';
+
+import { getTodayLocalDate } from '@/lib/date';
 
 /* =========================================================
    OPTIONS
@@ -63,27 +66,6 @@ const eventTimes = [
   'Dinner',
   'Full Day',
 ];
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function getTodayLocalDate() {
-  const now = new Date();
-
-  const year =
-    now.getFullYear();
-
-  const month = String(
-    now.getMonth() + 1,
-  ).padStart(2, '0');
-
-  const day = String(
-    now.getDate(),
-  ).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
 
 /* =========================================================
    COMPONENT
@@ -496,46 +478,41 @@ export default function EventEnquiryForm() {
             }
           />
 
-          <TextField
-            select
-            label="Event Type"
-            defaultValue=""
-            fullWidth
-            required
-            {...register(
-              'eventType',
-            )}
-            error={
-              Boolean(
-                errors.eventType,
-              )
-            }
-            helperText={
-              errors.eventType
-                ?.message
-            }
-          >
-            <MenuItem value="">
-              Select event type
-            </MenuItem>
-
-            {eventTypes.map(
-              (
-                eventType,
-              ) => (
-                <MenuItem
-                  key={
-                    eventType
-                  }
-                  value={
-                    eventType
-                  }
-                >
-                  {eventType}
+          <Controller
+            name="eventType"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Event Type"
+                fullWidth
+                required
+                error={Boolean(
+                  errors.eventType,
+                )}
+                helperText={
+                  errors.eventType
+                    ?.message
+                }
+              >
+                <MenuItem value="">
+                  Select event type
                 </MenuItem>
-              ),
+
+                {eventTypes.map(
+                  (eventType) => (
+                    <MenuItem
+                      key={eventType}
+                      value={eventType}
+                    >
+                      {eventType}
+                    </MenuItem>
+                  ),
+                )}
+              </TextField>
             )}
-          </TextField>
+          />
         </Box>
 
         {/* DATE + TIME */}
@@ -584,40 +561,41 @@ export default function EventEnquiryForm() {
             }}
           />
 
-          <TextField
-            select
-            label="Preferred Time"
-            defaultValue=""
-            fullWidth
-            required
-            {...register(
-              'eventTime',
-            )}
-            error={
-              Boolean(
-                errors.eventTime,
-              )
-            }
-            helperText={
-              errors.eventTime
-                ?.message
-            }
-          >
-            <MenuItem value="">
-              Select time
-            </MenuItem>
-
-            {eventTimes.map(
-              (time) => (
-                <MenuItem
-                  key={time}
-                  value={time}
-                >
-                  {time}
+          <Controller
+            name="eventTime"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Preferred Time"
+                fullWidth
+                required
+                error={Boolean(
+                  errors.eventTime,
+                )}
+                helperText={
+                  errors.eventTime
+                    ?.message
+                }
+              >
+                <MenuItem value="">
+                  Select time
                 </MenuItem>
-              ),
+
+                {eventTimes.map(
+                  (time) => (
+                    <MenuItem
+                      key={time}
+                      value={time}
+                    >
+                      {time}
+                    </MenuItem>
+                  ),
+                )}
+              </TextField>
             )}
-          </TextField>
+          />
         </Box>
 
         {/* GUESTS + ALTERNATIVE DATE */}

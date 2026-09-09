@@ -1,24 +1,6 @@
 import * as yup from 'yup';
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function getTodayLocalDate() {
-  const now = new Date();
-
-  const year = now.getFullYear();
-
-  const month = String(
-    now.getMonth() + 1,
-  ).padStart(2, '0');
-
-  const day = String(
-    now.getDate(),
-  ).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
+import { isNotInPast } from '@/lib/date';
 
 /* =========================================================
    RESERVATION SCHEMA
@@ -60,16 +42,7 @@ export const reservationSchema = yup
       .test(
         'not-in-past',
         'Reservation date cannot be in the past',
-        (value) => {
-          if (!value) {
-            return false;
-          }
-
-          return (
-            value >=
-            getTodayLocalDate()
-          );
-        },
+        (value) => isNotInPast(value),
       ),
 
     time: yup

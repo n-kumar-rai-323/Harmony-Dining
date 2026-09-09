@@ -1,6 +1,8 @@
 'use client';
 
 import {
+  useCallback,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -11,9 +13,13 @@ import {
   Box,
   Container,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 
-import { alpha } from '@mui/material/styles';
+import {
+  alpha,
+  useTheme,
+} from '@mui/material/styles';
 
 import {
   AnimatePresence,
@@ -252,6 +258,202 @@ export default function AnimatedExperience({
   const activeStory =
     validStories[safeActiveIndex] ?? null;
 
+  /* =======================================================
+     MOBILE STORY SLIDER
+
+     Small screens get an auto-advancing horizontal card
+     slider (scroll-snap + dot indicators) instead of the
+     desktop scroll-pinned storytelling.
+  ======================================================= */
+
+  const theme = useTheme();
+
+  const isMobileViewport = useMediaQuery(
+    theme.breakpoints.down('md'),
+  );
+
+  const mobileTrackRef =
+    useRef<HTMLDivElement | null>(null);
+
+  const resumeTimerRef = useRef<
+    number | null
+  >(null);
+
+  const [mobileIndex, setMobileIndex] =
+    useState(0);
+
+  const [mobilePaused, setMobilePaused] =
+    useState(false);
+
+  const safeMobileIndex =
+    storyCount > 0
+      ? Math.min(
+          mobileIndex,
+          storyCount - 1,
+        )
+      : 0;
+
+  const scrollToStoryCard = useCallback(
+    (index: number) => {
+      const track = mobileTrackRef.current;
+
+      if (!track) {
+        return;
+      }
+
+      const card =
+        track.querySelectorAll<HTMLElement>(
+          '[data-experience-card]',
+        )[index];
+
+      if (!card) {
+        return;
+      }
+
+      const paddingLeft =
+        parseFloat(
+          window.getComputedStyle(track)
+            .paddingLeft,
+        ) || 0;
+
+      const delta =
+        card.getBoundingClientRect().left -
+        track.getBoundingClientRect().left -
+        paddingLeft;
+
+      track.scrollBy({
+        left: delta,
+        behavior: shouldReduceMotion
+          ? 'auto'
+          : 'smooth',
+      });
+    },
+    [shouldReduceMotion],
+  );
+
+  const pauseAutoplay = useCallback(() => {
+    setMobilePaused(true);
+
+    if (resumeTimerRef.current !== null) {
+      window.clearTimeout(
+        resumeTimerRef.current,
+      );
+    }
+
+    resumeTimerRef.current =
+      window.setTimeout(() => {
+        setMobilePaused(false);
+        resumeTimerRef.current = null;
+      }, 7000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (resumeTimerRef.current !== null) {
+        window.clearTimeout(
+          resumeTimerRef.current,
+        );
+      }
+    };
+  }, []);
+
+  /* Track the card in view (also catches manual swipes). */
+  useEffect(() => {
+    if (
+      !isMobileViewport ||
+      storyCount <= 1
+    ) {
+      return;
+    }
+
+    const track = mobileTrackRef.current;
+
+    if (!track) {
+      return;
+    }
+
+    const cards = Array.from(
+      track.querySelectorAll<HTMLElement>(
+        '[data-experience-card]',
+      ),
+    );
+
+    if (cards.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let best: IntersectionObserverEntry | null =
+          null;
+
+        for (const entry of entries) {
+          if (
+            !best ||
+            entry.intersectionRatio >
+              best.intersectionRatio
+          ) {
+            best = entry;
+          }
+        }
+
+        if (best && best.isIntersecting) {
+          const nextIndex =
+            cards.indexOf(
+              best.target as HTMLElement,
+            );
+
+          if (nextIndex >= 0) {
+            setMobileIndex(nextIndex);
+          }
+        }
+      },
+      {
+        root: track,
+        threshold: [0.4, 0.6, 0.9],
+      },
+    );
+
+    cards.forEach((card) =>
+      observer.observe(card),
+    );
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isMobileViewport, storyCount]);
+
+  /* Auto-advance. */
+  useEffect(() => {
+    if (
+      !isMobileViewport ||
+      storyCount <= 1 ||
+      mobilePaused ||
+      shouldReduceMotion
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const next =
+        (safeMobileIndex + 1) % storyCount;
+
+      setMobileIndex(next);
+      scrollToStoryCard(next);
+    }, 4500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    isMobileViewport,
+    mobilePaused,
+    safeMobileIndex,
+    scrollToStoryCard,
+    shouldReduceMotion,
+    storyCount,
+  ]);
+
   /*
    * Safe public empty-state:
    * If Admin unpublishes all stories,
@@ -393,15 +595,38 @@ export default function AnimatedExperience({
             )}
           </Box>
 
-          {/* STORIES */}
+          {/* STORY SLIDER */}
 
           <Box
+            ref={mobileTrackRef}
+            onPointerDown={pauseAutoplay}
             sx={{
-              display: 'grid',
+              display: 'flex',
 
-              gap: {
-                xs: 3,
-                sm: 4,
+              gap: 1.75,
+
+              mx: {
+                xs: -2,
+                sm: -3,
+              },
+
+              px: {
+                xs: 2,
+                sm: 3,
+              },
+
+              overflowX: 'auto',
+              overflowY: 'hidden',
+
+              scrollSnapType: 'x mandatory',
+
+              WebkitOverflowScrolling: 'touch',
+
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+
+              '&::-webkit-scrollbar': {
+                display: 'none',
               },
             }}
           >
@@ -410,7 +635,14 @@ export default function AnimatedExperience({
                 <Box
                   key={story.id}
                   component="article"
+                  data-experience-card
                   sx={{
+                    flex: '0 0 auto',
+
+                    width: 'min(86%, 400px)',
+
+                    scrollSnapAlign: 'start',
+
                     minWidth: 0,
 
                     overflow: 'hidden',
@@ -744,6 +976,86 @@ export default function AnimatedExperience({
               ),
             )}
           </Box>
+
+          {/* DOT INDICATORS */}
+
+          {storyCount > 1 && (
+            <Box
+              sx={{
+                mt: {
+                  xs: 2.5,
+                  sm: 3,
+                },
+
+                display: 'flex',
+
+                justifyContent: 'center',
+
+                alignItems: 'center',
+
+                gap: 1,
+              }}
+            >
+              {validStories.map(
+                (story, index) => {
+                  const isActive =
+                    index === safeMobileIndex;
+
+                  return (
+                    <Box
+                      key={story.id}
+                      component="button"
+                      type="button"
+                      aria-label={`Show story ${
+                        index + 1
+                      } of ${storyCount}`}
+                      aria-current={
+                        isActive
+                          ? 'true'
+                          : undefined
+                      }
+                      onClick={() => {
+                        pauseAutoplay();
+                        setMobileIndex(index);
+                        scrollToStoryCard(index);
+                      }}
+                      sx={{
+                        p: 0,
+
+                        m: 0,
+
+                        border: 'none',
+
+                        appearance: 'none',
+
+                        cursor: 'pointer',
+
+                        height: 6,
+
+                        width: isActive
+                          ? 24
+                          : 6,
+
+                        borderRadius: 999,
+
+                        bgcolor: isActive
+                          ? 'secondary.main'
+                          : 'divider',
+
+                        transition:
+                          'width 300ms ease, background-color 300ms ease',
+
+                        '@media (prefers-reduced-motion: reduce)':
+                          {
+                            transition: 'none',
+                          },
+                      }}
+                    />
+                  );
+                },
+              )}
+            </Box>
+          )}
         </Container>
       </Box>
 
