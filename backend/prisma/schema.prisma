@@ -1,0 +1,610 @@
+// Harmony Restaurant — data model
+// Postgres. Content entities use soft delete (`deletedAt`).
+// Transactional entities (reservations, enquiries) keep status + history
+// instead of being deleted.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTH / RBAC
+// ============================================================
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum AdminStatus {
+  ACTIVE
+  DISABLED
+}
+
+model AdminUser {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  role         AdminRole   @default(STAFF)
+  status       AdminStatus @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?
+
+  sessions            Session[]
+  permissionOverrides AdminUserPermission[]
+  auditLogs           AuditLog[]
+  notificationReads   NotificationRead[]
+
+  @@index([role])
+  @@index([status])
+  @@map("admin_users")
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  // sha-256 of the opaque cookie token; the raw token is never stored
+  tokenHash   String    @unique
+  adminUserId String
+  admin       AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  ip          String?
+  userAgent   String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+
+  @@index([adminUserId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// Catalogue of permission keys, e.g. "menu.create", "reservations.update".
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  description String
+  createdAt   DateTime @default(now())
+
+  roles           RolePermission[]
+  userOverrides   AdminUserPermission[]
+
+  @@map("permissions")
+}
+
+// Default permissions granted to a role.
+model RolePermission {
+  role         AdminRole
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([role, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+// Per-user grant (true) or explicit deny (false) that overrides the role default.
+model AdminUserPermission {
+  adminUserId  String
+  admin        AdminUser  @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  granted      Boolean
+
+  @@id([adminUserId, permissionId])
+  @@index([permissionId])
+  @@map("admin_user_permissions")
+}
+
+// ============================================================
+// MEDIA
+// ============================================================
+
+model Media {
+  id               String   @id @default(cuid())
+  storageKey       String   @unique
+  url              String
+  mimeType         String
+  sizeBytes        Int
+  width            Int?
+  height           Int?
+  originalFilename String
+  altText          String?
+  title            String?
+  caption          String?
+  folder           String?  @default("general")
+  uploadedById     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  menuItems       MenuItem[]
+  galleryItems    GalleryItem[]
+  eventCovers     Event[]        @relation("EventCover")
+  eventMedia      EventMedia[]
+  eventPosters    EventMedia[]   @relation("EventMediaPoster")
+
+  @@index([folder])
+  @@index([deletedAt])
+  @@map("media")
+}
+
+// ============================================================
+// MENU
+// ============================================================
+
+enum MenuGroup {
+  FOOD
+  BEVERAGES
+  BAR
+}
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model MenuCategory {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  group       MenuGroup
+  sortOrder   Int           @default(0)
+  status      PublishStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  items MenuItem[]
+
+  @@index([group, sortOrder])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String        @id @default(cuid())
+  categoryId  String
+  category    MenuCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name        String
+  slug        String
+  description String?
+  // Fixed price. Null when the item only has variants or a priceLabel.
+  price       Decimal?      @db.Decimal(10, 2)
+  priceLabel  String?
+  mediaId     String?
+  media       Media?        @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  status      PublishStatus @default(DRAFT)
+  isFeatured  Boolean       @default(false)
+  sortOrder   Int           @default(0)
+  tags        String[]      @default([])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  variants MenuItemVariant[]
+
+  @@unique([categoryId, slug])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([categoryId, sortOrder])
+  @@index([deletedAt])
+  @@map("menu_items")
+}
+
+model MenuItemVariant {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  label     String
+  price     Decimal  @db.Decimal(10, 2)
+  sortOrder Int      @default(0)
+
+  @@index([itemId, sortOrder])
+  @@map("menu_item_variants")
+}
+
+// ============================================================
+// GALLERY
+// ============================================================
+
+enum GalleryCategory {
+  DINING
+  EVENTS
+  SPACES
+  TEAM
+  KITCHEN
+}
+
+model GalleryItem {
+  id             String          @id @default(cuid())
+  mediaId        String
+  media          Media           @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  title          String
+  caption        String?
+  altText        String
+  category       GalleryCategory
+  sortOrder      Int             @default(0)
+  status         PublishStatus   @default(DRAFT)
+  featuredOnHome Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+
+  @@index([category, sortOrder])
+  @@index([status])
+  @@index([featuredOnHome])
+  @@index([deletedAt])
+  @@map("gallery_items")
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+
+enum EventLifecycle {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
+
+enum EventMediaType {
+  IMAGE
+  VIDEO
+}
+
+model Event {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  category      String
+  summary       String
+  description   String?
+  eventDate     DateTime       @db.Date
+  startTime     String?
+  endTime       String?
+  guestsLabel   String?
+  coverMediaId  String?
+  coverMedia    Media?         @relation("EventCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  status        PublishStatus  @default(DRAFT)
+  lifecycle     EventLifecycle @default(UPCOMING)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  media EventMedia[]
+
+  @@index([status, eventDate])
+  @@index([lifecycle])
+  @@index([deletedAt])
+  @@map("events")
+}
+
+model EventMedia {
+  id             String        @id @default(cuid())
+  eventId        String
+  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  mediaId        String
+  media          Media         @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  type           EventMediaType @default(IMAGE)
+  posterMediaId  String?
+  posterMedia    Media?        @relation("EventMediaPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
+  altText        String
+  sortOrder      Int           @default(0)
+
+  @@index([eventId, sortOrder])
+  @@map("event_media")
+}
+
+// ============================================================
+// RESERVATIONS
+// ============================================================
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum BookingSource {
+  WEBSITE
+  ADMIN
+}
+
+// Single-row configuration (id is always "default").
+model ReservationSettings {
+  id                     String   @id @default("default")
+  openingTime            String   @default("10:00")
+  closingTime            String   @default("22:00")
+  slotDurationMinutes    Int      @default(30)
+  maxGuestsPerReservation Int     @default(12)
+  capacityPerSlot        Int      @default(40)
+  leadTimeHours          Int      @default(2)
+  maxAdvanceDays         Int      @default(60)
+  timezone               String   @default("Asia/Kathmandu")
+  updatedById            String?
+  updatedAt              DateTime @updatedAt
+
+  @@map("reservation_settings")
+}
+
+model DisabledDate {
+  id        String   @id @default(cuid())
+  date      DateTime @unique @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@map("disabled_dates")
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  reference   String            @unique
+  fullName    String
+  phone       String
+  email       String?
+  date        DateTime          @db.Date
+  time        String
+  guests      Int
+  note        String?
+  status      ReservationStatus @default(PENDING)
+  source      BookingSource     @default(WEBSITE)
+  handledById String?
+  ip          String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  history ReservationStatusHistory[]
+
+  // Capacity counting queries hit (date, time, status).
+  @@index([date, time, status])
+  @@index([status, date])
+  @@index([createdAt])
+  @@map("reservations")
+}
+
+model ReservationStatusHistory {
+  id            String             @id @default(cuid())
+  reservationId String
+  reservation   Reservation        @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  fromStatus    ReservationStatus?
+  toStatus      ReservationStatus
+  changedById   String?
+  note          String?
+  createdAt     DateTime           @default(now())
+
+  @@index([reservationId])
+  @@map("reservation_status_history")
+}
+
+// ============================================================
+// PRIVATE EVENT ENQUIRIES
+// ============================================================
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+model EventEnquiry {
+  id              String        @id @default(cuid())
+  reference       String        @unique
+  fullName        String
+  phone           String
+  email           String?
+  eventType       String
+  preferredDate   DateTime      @db.Date
+  alternativeDate DateTime?     @db.Date
+  startTime       String?
+  endTime         String?
+  guests          Int
+  budget          Decimal?      @db.Decimal(12, 2)
+  requirements    String?
+  status          EnquiryStatus @default(NEW)
+  handledById     String?
+  ip              String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  history EventEnquiryStatusHistory[]
+
+  @@index([status, preferredDate])
+  @@index([preferredDate])
+  @@index([createdAt])
+  @@map("event_enquiries")
+}
+
+model EventEnquiryStatusHistory {
+  id         String        @id @default(cuid())
+  enquiryId  String
+  enquiry    EventEnquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  fromStatus EnquiryStatus?
+  toStatus   EnquiryStatus
+  changedById String?
+  note       String?
+  createdAt  DateTime      @default(now())
+
+  @@index([enquiryId])
+  @@map("event_enquiry_status_history")
+}
+
+// ============================================================
+// REVIEWS / TESTIMONIALS
+// ============================================================
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReviewSource {
+  WEBSITE
+  IMPORT
+}
+
+model Review {
+  id            String       @id @default(cuid())
+  name          String
+  rating        Int          // 1..5, enforced in DTO + a CHECK constraint (migration)
+  comment       String
+  role          String?      // optional "Birthday guest" style label
+  status        ReviewStatus @default(PENDING)
+  isPublished   Boolean      @default(false)
+  isFeatured    Boolean      @default(false)
+  source        ReviewSource @default(WEBSITE)
+  moderatedById String?
+  moderatedAt   DateTime?
+  ip            String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  @@index([status, isPublished])
+  @@index([isFeatured])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("reviews")
+}
+
+// ============================================================
+// SITE SETTINGS  (key -> validated JSON group)
+// keys: business | hours | social | footer | promo | reservationCta
+// ============================================================
+
+model SiteSetting {
+  key         String   @id
+  value       Json
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+// ============================================================
+// HOMEPAGE CMS  (key -> validated JSON content, per section)
+// keys: hero | dining | animated | eventsShowcase | reservationCta | reviews | location
+// ============================================================
+
+model HomepageSection {
+  key         String   @id
+  content     Json
+  isPublished Boolean  @default(true)
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("homepage_sections")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+enum NotificationType {
+  RESERVATION_CREATED
+  RESERVATION_CANCELLED
+  ENQUIRY_CREATED
+  REVIEW_CREATED
+  SYSTEM
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  type       NotificationType
+  title      String
+  message    String?
+  entityType String?
+  entityId   String?
+  createdAt  DateTime         @default(now())
+
+  reads NotificationRead[]
+
+  @@index([type])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// Per-admin read state for a global notification.
+model NotificationRead {
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  adminUserId    String
+  admin          AdminUser    @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@id([notificationId, adminUserId])
+  @@index([adminUserId])
+  @@map("notification_reads")
+}
+
+// ============================================================
+// EMAIL LOG  (delivery is best-effort, never blocks core writes)
+// ============================================================
+
+enum MailStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+model MailLog {
+  id         String     @id @default(cuid())
+  to         String
+  subject    String
+  template   String
+  status     MailStatus @default(QUEUED)
+  attempts   Int        @default(0)
+  error      String?
+  entityType String?
+  entityId   String?
+  createdAt  DateTime   @default(now())
+  sentAt     DateTime?
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("mail_logs")
+}
+
+// ============================================================
+// AUDIT LOG  (append-only; no update/delete exposed by the app)
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      AdminUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String?  // denormalised snapshot, survives actor deletion
+  action     String   // e.g. "menu_item.update"
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  requestId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,26 @@
+# Local development database only. Not for production.
+# Start:  docker compose up -d
+# Stop:   docker compose down        (add -v to also drop the volume)
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: harmony-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: harmony
+      POSTGRES_PASSWORD: harmony
+      POSTGRES_DB: harmony
+    ports:
+      # Host port 5433 to avoid clashing with any other local Postgres.
+      - '5433:5432'
+    volumes:
+      - harmony-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U harmony -d harmony']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  harmony-db-data:

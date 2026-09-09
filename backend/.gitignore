@@ -4,6 +4,9 @@
 /build
 *.tsbuildinfo
 
+# local media storage (dev)
+/storage
+
 # Logs
 logs
 *.log
