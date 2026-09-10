@@ -35,11 +35,28 @@ import type { CarouselSlide } from '@/components/common/image-carousel';
    DiningExperience
 ========================================================= */
 
+/**
+ * Store only a serialisable key in Admin/API data — the UI resolves it to a
+ * local MUI icon.
+ */
+export type DiningDetailIconKey = 'restaurant';
+
 type DiningDetail = {
   title: string;
   subtitle?: string;
-  icon?: SvgIconComponent;
+  iconKey?: DiningDetailIconKey;
 };
+
+function getDiningDetailIcon(
+  iconKey?: DiningDetailIconKey,
+): SvgIconComponent {
+  switch (iconKey) {
+    case 'restaurant':
+      return RestaurantRoundedIcon;
+    default:
+      return RestaurantRoundedIcon;
+  }
+}
 
 type DiningCta = {
   label: string;
@@ -152,7 +169,7 @@ const diningContent: DiningExperienceContent = {
   detail: {
     title: 'Dining',
     subtitle: 'Premium Space',
-    icon: RestaurantRoundedIcon,
+    iconKey: 'restaurant',
   },
 
   cta: {
@@ -210,8 +227,6 @@ export default function DiningExperience({
       },
     ];
   })();
-
-  const DetailIcon = detail?.icon;
 
   const hasDetail =
     Boolean(detail?.title?.trim()) ||
@@ -521,19 +536,19 @@ export default function DiningExperience({
                           'secondary.main',
                       }}
                     >
-                      {DetailIcon ? (
-                        <DetailIcon
-                          sx={{
-                            fontSize: 22,
-                          }}
-                        />
-                      ) : (
-                        <RestaurantRoundedIcon
-                          sx={{
-                            fontSize: 22,
-                          }}
-                        />
-                      )}
+                      {(() => {
+                        const DetailIcon =
+                          getDiningDetailIcon(
+                            detail.iconKey,
+                          );
+                        return (
+                          <DetailIcon
+                            sx={{
+                              fontSize: 22,
+                            }}
+                          />
+                        );
+                      })()}
                     </Box>
 
                     <Box

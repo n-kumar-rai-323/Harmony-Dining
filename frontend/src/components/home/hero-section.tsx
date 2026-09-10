@@ -43,15 +43,39 @@ import ImageCarousel, {
    HeroSection
 ========================================================= */
 
+/**
+ * Store only a serialisable key in Admin/API data — the UI resolves it to a
+ * local MUI icon. Never store a React component in PostgreSQL.
+ */
+export type HeroActionIconKey =
+  | 'celebration'
+  | 'calendar'
+  | 'menu';
+
 type HeroAction = {
   label: string;
   href: string;
-  icon?: SvgIconComponent;
+  iconKey?: HeroActionIconKey;
   variant:
     | 'primary'
     | 'secondary'
     | 'tertiary';
 };
+
+function getHeroActionIcon(
+  iconKey?: HeroActionIconKey,
+): SvgIconComponent | undefined {
+  switch (iconKey) {
+    case 'celebration':
+      return CelebrationRoundedIcon;
+    case 'calendar':
+      return CalendarMonthRoundedIcon;
+    case 'menu':
+      return RestaurantMenuRoundedIcon;
+    default:
+      return undefined;
+  }
+}
 
 export type HeroContent = {
   eyebrow?: string;
@@ -171,8 +195,8 @@ const heroContent: HeroContent = {
       href:
         '/events#enquiry',
 
-      icon:
-        CelebrationRoundedIcon,
+      iconKey:
+        'celebration',
 
       variant:
         'primary',
@@ -185,8 +209,8 @@ const heroContent: HeroContent = {
       href:
         '/reservation',
 
-      icon:
-        CalendarMonthRoundedIcon,
+      iconKey:
+        'calendar',
 
       variant:
         'secondary',
@@ -199,8 +223,8 @@ const heroContent: HeroContent = {
       href:
         '/menu',
 
-      icon:
-        RestaurantMenuRoundedIcon,
+      iconKey:
+        'menu',
 
       variant:
         'tertiary',
@@ -601,7 +625,7 @@ export default function HeroSection({
                     action,
                   ) => {
                     const Icon =
-                      action.icon;
+                      getHeroActionIcon(action.iconKey);
 
                     const isPrimary =
                       action.variant ===
@@ -764,7 +788,7 @@ export default function HeroSection({
                     action,
                   ) => {
                     const Icon =
-                      action.icon;
+                      getHeroActionIcon(action.iconKey);
 
                     const isPrimary =
                       action.variant ===

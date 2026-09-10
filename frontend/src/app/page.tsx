@@ -8,12 +8,15 @@ import GalleryShowcase from '@/components/home/gallery-showcase';
 import HeroSection from '@/components/home/hero-section';
 import LocationContact from '@/components/home/location-contact';
 import ReservationCta from '@/components/home/reservation-cta';
-import ReviewsShowcase, {
+import ReviewsShowcase from '@/components/home/reviews-showcase';
+import {
   initialReviewsContent,
-} from '@/components/home/reviews-showcase';
+  type ReviewsShowcaseContent,
+} from '@/components/home/reviews-showcase.content';
 import { getMenuCategories } from '@/lib/api/menu';
 import { getHomeGalleryItems } from '@/lib/api/gallery';
 import { getFeaturedReviews } from '@/lib/api/reviews';
+import { getHomepageContent } from '@/lib/api/homepage';
 
 export const metadata: Metadata = {
   description:
@@ -30,43 +33,49 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [menuCategories, galleryItems, featuredReviews] = await Promise.all([
-    getMenuCategories(),
-    getHomeGalleryItems(6),
-    getFeaturedReviews(7),
-  ]);
+  const [menuCategories, galleryItems, featuredReviews, home] =
+    await Promise.all([
+      getMenuCategories(),
+      getHomeGalleryItems(6),
+      getFeaturedReviews(7),
+      getHomepageContent(),
+    ]);
 
   const galleryPhotos = galleryItems.map((item) => ({
     src: item.image,
     alt: item.alt,
   }));
 
-  // Use admin-managed reviews when the API returns any; otherwise the showcase
-  // falls back to its built-in sample content.
-  const reviewsContent =
-    featuredReviews.length > 0
-      ? { ...initialReviewsContent, reviews: featuredReviews }
-      : undefined;
+  // Homepage CMS supplies the reviews section copy; the cards come from the
+  // Reviews API, falling back to the showcase's built-in samples.
+  const reviewsContent: ReviewsShowcaseContent = {
+    ...initialReviewsContent,
+    ...(home.reviews ?? {}),
+    reviews:
+      featuredReviews.length > 0
+        ? featuredReviews
+        : initialReviewsContent.reviews,
+  };
 
   return (
     <main>
-      <HeroSection />
+      <HeroSection content={home.hero ?? undefined} />
 
-      <DiningExperience />
+      <DiningExperience content={home.dining ?? undefined} />
 
-      <AnimatedExperience />
+      <AnimatedExperience content={home.animated ?? undefined} />
 
       <FeaturedMenu menuSource={menuCategories} />
 
-      <EventsShowcase />
+      <EventsShowcase content={home.eventsShowcase ?? undefined} />
 
-      <ReservationCta />
+      <ReservationCta content={home.reservationCta ?? undefined} />
 
       <GalleryShowcase photos={galleryPhotos} />
 
       <ReviewsShowcase content={reviewsContent} />
 
-      <LocationContact />
+      <LocationContact content={home.location ?? undefined} />
     </main>
   );
 }

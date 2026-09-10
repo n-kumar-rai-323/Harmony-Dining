@@ -1,4 +1,4 @@
-import type { ReviewItem } from '@/components/home/reviews-showcase';
+import type { ReviewItem } from '@/components/home/reviews-showcase.content';
 import { apiGet } from './client';
 
 type ApiPublicReview = {
