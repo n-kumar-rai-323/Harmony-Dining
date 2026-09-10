@@ -14,11 +14,15 @@ import type { IconType } from 'react-icons';
 import {
   FaFacebookF,
   FaInstagram,
+  FaLinkedinIn,
   FaTiktok,
-} from 'react-icons/fa';
+  FaXTwitter,
+  FaYoutube,
+} from 'react-icons/fa6';
 
 import {
   getSocialLinks,
+  type SocialLink,
   type SocialPlatform,
 } from '@/data/site';
 
@@ -33,22 +37,32 @@ const PLATFORM_ICONS: Record<
   facebook: FaFacebookF,
   instagram: FaInstagram,
   tiktok: FaTiktok,
+  youtube: FaYoutube,
+  x: FaXTwitter,
+  linkedin: FaLinkedinIn,
 };
-
-const socialLinks = getSocialLinks().map(
-  (link) => ({
-    ...link,
-    icon: PLATFORM_ICONS[link.platform],
-  }),
-);
 
 /* =========================================================
    COMPONENT
 ========================================================= */
 
-export default function SocialFloatingBar() {
+type SocialFloatingBarProps = {
+  /** Social links from Site Settings. Falls back to the bundled local list. */
+  links?: SocialLink[];
+};
+
+export default function SocialFloatingBar({
+  links,
+}: SocialFloatingBarProps) {
   const [mobileOpen, setMobileOpen] =
     useState(false);
+
+  const socialLinks = (
+    links && links.length > 0 ? links : getSocialLinks()
+  ).map((link) => ({
+    ...link,
+    icon: PLATFORM_ICONS[link.platform] ?? FaFacebookF,
+  }));
 
   return (
     <>

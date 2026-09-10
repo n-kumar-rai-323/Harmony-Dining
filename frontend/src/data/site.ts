@@ -11,7 +11,10 @@
 export type SocialPlatform =
   | 'facebook'
   | 'instagram'
-  | 'tiktok';
+  | 'tiktok'
+  | 'youtube'
+  | 'x'
+  | 'linkedin';
 
 export type SocialLink = {
   platform: SocialPlatform;

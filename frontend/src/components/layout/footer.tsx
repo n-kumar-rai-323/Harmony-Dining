@@ -29,11 +29,15 @@ import type { IconType } from 'react-icons';
 import {
   FaFacebookF,
   FaInstagram,
+  FaLinkedinIn,
   FaTiktok,
-} from 'react-icons/fa';
+  FaXTwitter,
+  FaYoutube,
+} from 'react-icons/fa6';
 
 import {
   getSocialLinks,
+  type SocialLink,
   type SocialPlatform,
 } from '@/data/site';
 
@@ -118,6 +122,8 @@ export type FooterContent = {
 
 type FooterProps = {
   content?: FooterContent;
+  /** Social links from Site Settings. Falls back to the bundled local list. */
+  social?: SocialLink[];
 };
 
 /* =========================================================
@@ -305,16 +311,19 @@ const PLATFORM_ICONS: Record<
   facebook: FaFacebookF,
   instagram: FaInstagram,
   tiktok: FaTiktok,
+  youtube: FaYoutube,
+  x: FaXTwitter,
+  linkedin: FaLinkedinIn,
 };
 
-const socialLinks = getSocialLinks().map(
-  (link) => ({
+function toIconLinks(links: SocialLink[]) {
+  return links.map((link) => ({
     label: link.label,
     href: link.href,
-    icon: PLATFORM_ICONS[link.platform],
+    icon: PLATFORM_ICONS[link.platform] ?? FaFacebookF,
     color: link.brandColor,
-  }),
-);
+  }));
+}
 
 /* =========================================================
    HELPERS
@@ -370,10 +379,15 @@ function getFooterLinkIcon(
 
 export default function Footer({
   content = initialFooterContent,
+  social,
 }: FooterProps) {
   if (content.enabled === false) {
     return null;
   }
+
+  const socialLinks = toIconLinks(
+    social && social.length > 0 ? social : getSocialLinks(),
+  );
 
   const topActions = (
     content.topCta?.actions ?? []

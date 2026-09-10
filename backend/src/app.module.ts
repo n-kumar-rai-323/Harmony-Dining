@@ -21,6 +21,7 @@ import { EventsModule } from './events/events.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { EnquiriesModule } from './enquiries/enquiries.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { SiteSettingsModule } from './site-settings/site-settings.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -90,6 +91,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ReservationsModule,
     EnquiriesModule,
     ReviewsModule,
+    SiteSettingsModule,
   ],
   controllers: [AppController],
   providers: [

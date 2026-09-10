@@ -17,10 +17,7 @@ import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
 
-import {
-  getSiteContact,
-  getSocialLinks,
-} from '@/data/site';
+import { getSiteSettings } from '@/lib/api/site';
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -37,21 +34,18 @@ export const metadata: Metadata = {
   },
 };
 
-const SITE_CONTACT = getSiteContact();
+export default async function ContactPage() {
+  const { contact, social } = await getSiteSettings();
 
-const CONTACT_DETAILS = {
-  phone: SITE_CONTACT.phone,
-  email: SITE_CONTACT.email,
-  addressLines: SITE_CONTACT.addressLines,
-  hours: SITE_CONTACT.hours.flatMap((entry) => [
-    entry.label,
-    entry.value,
-  ]),
-};
+  const CONTACT_DETAILS = {
+    phone: contact.phone,
+    email: contact.email,
+    addressLines: contact.addressLines,
+    hours: contact.hours.flatMap((entry) => [entry.label, entry.value]),
+  };
 
-const SOCIAL_LINKS = getSocialLinks();
+  const SOCIAL_LINKS = social;
 
-export default function ContactPage() {
   return (
     <Box
       component="main"

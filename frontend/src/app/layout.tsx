@@ -15,6 +15,7 @@ import SocialFloatingBar from '@/components/layout/social-floating-bar';
 import ThemeInitScript from '@/theme/theme-init-script';
 import ThemeRegistry from '@/theme/theme-provider';
 import { env } from '@/lib/env';
+import { getSiteSettings } from '@/lib/api/site';
 
 /* =========================================================
    FONTS
@@ -124,11 +125,13 @@ export const viewport: Viewport = {
    ROOT LAYOUT
 ========================================================= */
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { social } = await getSiteSettings();
+
   return (
     <html
       lang="en"
@@ -143,11 +146,11 @@ export default function RootLayout({
           <SitePromoOverlay />
 
           <Navbar />
-          <SocialFloatingBar />
+          <SocialFloatingBar links={social} />
 
           {children}
 
-          <Footer />
+          <Footer social={social} />
         </ThemeRegistry>
       </body>
     </html>
