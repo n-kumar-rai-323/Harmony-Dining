@@ -116,12 +116,14 @@ export default function AdminMenuPage() {
       header: 'Item',
       render: (r) => (
         <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {r.name}
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {r.name}
+            </Typography>
             {r.isFeatured && (
-              <Chip size="small" label="Featured" color="primary" variant="outlined" sx={{ ml: 1 }} />
+              <Chip size="small" label="Featured" color="primary" variant="outlined" />
             )}
-          </Typography>
+          </Stack>
           {r.description && (
             <Typography
               variant="caption"

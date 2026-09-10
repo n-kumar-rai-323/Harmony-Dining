@@ -13,6 +13,7 @@ import ThemeInitScript from '@/theme/theme-init-script';
 import ThemeRegistry from '@/theme/theme-provider';
 import { env } from '@/lib/env';
 import { getSiteSettings } from '@/lib/api/site';
+import { restaurantJsonLd } from '@/lib/seo/restaurant-jsonld';
 
 /* =========================================================
    FONTS
@@ -127,7 +128,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { social } = await getSiteSettings();
+  const settings = await getSiteSettings();
+  const { social } = settings;
 
   return (
     <html
@@ -136,6 +138,13 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body>
+        <script
+          type="application/ld+json"
+          // Server-rendered from admin-managed settings; not user input.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(restaurantJsonLd(settings)),
+          }}
+        />
         <ThemeInitScript />
 
         <ThemeRegistry>

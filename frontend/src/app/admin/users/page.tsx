@@ -102,12 +102,14 @@ export default function AdminUsersPage() {
       header: 'User',
       render: (r) => (
         <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {r.name}
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {r.name}
+            </Typography>
             {r.id === myId && (
-              <Chip size="small" label="you" variant="outlined" sx={{ ml: 1 }} />
+              <Chip size="small" label="you" variant="outlined" />
             )}
-          </Typography>
+          </Stack>
           <Typography variant="caption" color="text.secondary">
             {r.email}
           </Typography>
@@ -551,12 +553,14 @@ function PermissionsDialog({
                   sx={{ alignItems: 'center', py: 0.5 }}
                 >
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                      {p.key}
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                        {p.key}
+                      </Typography>
                       {effective.has(p.key) && (
-                        <Chip size="small" label="active" color="success" variant="outlined" sx={{ ml: 1 }} />
+                        <Chip size="small" label="active" color="success" variant="outlined" />
                       )}
-                    </Typography>
+                    </Stack>
                     <Typography variant="caption" color="text.secondary">
                       {p.description}
                     </Typography>
