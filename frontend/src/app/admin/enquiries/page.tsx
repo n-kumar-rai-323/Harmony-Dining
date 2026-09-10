@@ -24,7 +24,7 @@ import {
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
-import { PageHeader, QueryBoundary } from '@/components/admin/ui';
+import { FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
@@ -218,11 +218,7 @@ export default function AdminEnquiriesPage() {
         subtitle="Private event and hall booking requests."
       />
 
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.5}
-        sx={{ mb: 2, flexWrap: 'wrap' }}
-      >
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -261,7 +257,7 @@ export default function AdminEnquiriesPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ minWidth: 280, flexGrow: 1 }}
         />
-      </Stack>
+</FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable

@@ -13,7 +13,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   FormControlLabel,
   IconButton,
   Menu,
@@ -24,10 +23,11 @@ import {
   Typography,
 } from '@mui/material';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import PhotoLibraryRoundedIcon from '@mui/icons-material/PhotoLibraryRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
 
-import { PageHeader, QueryBoundary, ConfirmDialog } from '@/components/admin/ui';
+import { ConfirmDialog, DialogHeader, FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import { useAdminAuth } from '@/lib/admin/auth-context';
@@ -87,7 +87,7 @@ export default function AdminGalleryPage() {
         }
       />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -113,7 +113,7 @@ export default function AdminGalleryPage() {
           <MenuItem value="PUBLISHED">Published</MenuItem>
           <MenuItem value="DRAFT">Draft</MenuItem>
         </TextField>
-      </Stack>
+      </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <Box
@@ -303,7 +303,7 @@ function GalleryDialog({
 
   return (
     <Dialog open onClose={saving || uploading ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{item ? 'Edit photo' : 'Add photo'}</DialogTitle>
+      <DialogHeader icon={PhotoLibraryRoundedIcon} title={item ? 'Edit photo' : 'Add photo'} onClose={saving || uploading ? undefined : onClose} />
       <DialogContent dividers>
         <Stack spacing={2}>
           {errors.map((m, i) => (

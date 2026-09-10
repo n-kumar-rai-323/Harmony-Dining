@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   IconButton,
   ListItemIcon,
   Menu,
@@ -20,6 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import KeyRoundedIcon from '@mui/icons-material/KeyRounded';
@@ -28,7 +28,7 @@ import BlockRoundedIcon from '@mui/icons-material/BlockRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 
-import { PageHeader, QueryBoundary, ConfirmDialog } from '@/components/admin/ui';
+import { ConfirmDialog, DialogHeader, FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
@@ -183,7 +183,7 @@ export default function AdminUsersPage() {
         }
       />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -216,7 +216,7 @@ export default function AdminUsersPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ flexGrow: 1 }}
         />
-      </Stack>
+      </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable
@@ -363,7 +363,7 @@ function UserDialog({
 
   return (
     <Dialog open onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{user ? 'Edit user' : 'New user'}</DialogTitle>
+      <DialogHeader icon={GroupRoundedIcon} title={user ? 'Edit user' : 'New user'} onClose={saving ? undefined : onClose} />
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           {errors.map((m, i) => (
@@ -450,7 +450,7 @@ function PasswordDialog({
 
   return (
     <Dialog open onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Reset password</DialogTitle>
+      <DialogHeader icon={KeyRoundedIcon} title="Reset password" onClose={saving ? undefined : onClose} />
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           <Typography variant="body2" color="text.secondary">
@@ -533,7 +533,7 @@ function PermissionsDialog({
 
   return (
     <Dialog open onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Permissions · {user.name}</DialogTitle>
+      <DialogHeader icon={SecurityRoundedIcon} title={`Permissions · ${user.name}`} onClose={saving ? undefined : onClose} />
       <DialogContent dividers>
         {loading ? (
           <Typography color="text.secondary">Loading…</Typography>

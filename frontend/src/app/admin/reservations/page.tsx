@@ -25,7 +25,7 @@ import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import BlockRoundedIcon from '@mui/icons-material/BlockRounded';
 
-import { PageHeader, QueryBoundary } from '@/components/admin/ui';
+import { FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
@@ -219,11 +219,7 @@ export default function AdminReservationsPage() {
         subtitle="Table booking requests from the website."
       />
 
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.5}
-        sx={{ mb: 2, flexWrap: 'wrap' }}
-      >
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -270,7 +266,7 @@ export default function AdminReservationsPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ minWidth: 260, flexGrow: 1 }}
         />
-      </Stack>
+</FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable

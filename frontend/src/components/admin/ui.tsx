@@ -12,14 +12,110 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
+  Paper,
   Stack,
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { SvgIconComponent } from '@mui/icons-material';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { usePathname } from 'next/navigation';
 
 import { ADMIN_NAV } from '@/lib/admin/nav';
+
+/** Consistent container for a screen's filter controls. */
+export function FilterBar({ children }: { children: React.ReactNode }) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 1.5,
+        mb: 2.5,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 1.25,
+        alignItems: 'center',
+        bgcolor: (t) => alpha(t.palette.action.hover, 0.5),
+      }}
+    >
+      {children}
+    </Paper>
+  );
+}
+
+/** Dialog title with a coloured icon tile, a close button and a divider. */
+export function DialogHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  onClose,
+}: {
+  icon?: SvgIconComponent;
+  title: string;
+  subtitle?: string;
+  onClose?: () => void;
+}) {
+  return (
+    <DialogTitle sx={{ pb: 1.5 }}>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        {Icon && (
+          <Box
+            sx={{
+              display: 'grid',
+              placeItems: 'center',
+              width: 38,
+              height: 38,
+              borderRadius: 2,
+              flexShrink: 0,
+              color: 'primary.main',
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+            }}
+          >
+            <Icon fontSize="small" />
+          </Box>
+        )}
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography component="span" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography variant="body2" color="text.secondary">
+              {subtitle}
+            </Typography>
+          )}
+        </Box>
+        {onClose && (
+          <IconButton size="small" onClick={onClose} aria-label="Close">
+            <CloseRoundedIcon fontSize="small" />
+          </IconButton>
+        )}
+      </Stack>
+    </DialogTitle>
+  );
+}
+
+/** A titled sub-section inside a form dialog. */
+export function FormSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box>
+      <Typography
+        variant="overline"
+        color="text.secondary"
+        sx={{ display: 'block', mb: 1 }}
+      >
+        {title}
+      </Typography>
+      <Stack spacing={2}>{children}</Stack>
+    </Box>
+  );
+}
 
 export function PageHeader({
   title,

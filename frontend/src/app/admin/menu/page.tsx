@@ -9,7 +9,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   FormControlLabel,
   IconButton,
   ListItemButton,
@@ -27,10 +26,11 @@ import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 
-import { PageHeader, QueryBoundary, ConfirmDialog } from '@/components/admin/ui';
+import { ConfirmDialog, DialogHeader, FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminQuery } from '@/lib/admin/use-admin-query';
@@ -270,7 +270,7 @@ export default function AdminMenuPage() {
 
         {/* items */}
         <Box>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+          <FilterBar>
             <TextField
               select
               size="small"
@@ -290,7 +290,7 @@ export default function AdminMenuPage() {
               onChange={(e) => setSearchInput(e.target.value)}
               sx={{ flexGrow: 1 }}
             />
-          </Stack>
+          </FilterBar>
 
           <QueryBoundary loading={items.loading && !items.data} error={items.error} onRetry={items.reload}>
             <DataTable
@@ -469,7 +469,7 @@ function CategoryDialog({
 
   return (
     <Dialog open onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{category ? 'Edit category' : 'New category'}</DialogTitle>
+      <DialogHeader icon={RestaurantMenuRoundedIcon} title={category ? 'Edit category' : 'New category'} onClose={saving ? undefined : onClose} />
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           {errors.map((m, i) => (
@@ -577,7 +577,7 @@ function ItemDialog({
 
   return (
     <Dialog open onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{item ? 'Edit item' : 'New item'}</DialogTitle>
+      <DialogHeader icon={RestaurantMenuRoundedIcon} title={item ? 'Edit item' : 'New item'} onClose={saving ? undefined : onClose} />
       <DialogContent dividers>
         <Stack spacing={2}>
           {errors.map((m, i) => (

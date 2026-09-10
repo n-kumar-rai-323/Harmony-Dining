@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
-import { PageHeader, QueryBoundary } from '@/components/admin/ui';
+import { FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import { useAdminQuery } from '@/lib/admin/use-admin-query';
@@ -27,6 +27,12 @@ import {
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString();
+}
+
+function prettyIp(ip: string | null): string {
+  if (!ip) return '—';
+  const v = ip.replace(/^::ffff:/, '');
+  return v === '::1' || v === '127.0.0.1' ? 'localhost' : v;
 }
 
 export default function AdminAuditPage() {
@@ -99,7 +105,7 @@ export default function AdminAuditPage() {
       width: 120,
       render: (r) => (
         <Typography variant="caption" color="text.secondary">
-          {r.ip ?? '—'}
+          {prettyIp(r.ip)}
         </Typography>
       ),
     },
@@ -109,11 +115,7 @@ export default function AdminAuditPage() {
     <Box>
       <PageHeader title="Audit log" subtitle="Every change made through the admin API." />
 
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.5}
-        sx={{ mb: 2, flexWrap: 'wrap' }}
-      >
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -178,7 +180,7 @@ export default function AdminAuditPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ flexGrow: 1, minWidth: 160 }}
         />
-      </Stack>
+</FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable
@@ -244,7 +246,7 @@ function AuditDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 {data.entityType}
                 {data.entityId ? ` · ${data.entityId}` : ''}
               </Field>
-              <Field label="IP">{data.ip ?? '—'}</Field>
+              <Field label="IP">{prettyIp(data.ip)}</Field>
               <Field label="User agent">{data.userAgent ?? '—'}</Field>
               <Field label="Request id">{data.requestId ?? '—'}</Field>
             </Box>

@@ -9,7 +9,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
   ListItemIcon,
@@ -20,11 +19,12 @@ import {
   Typography,
 } from '@mui/material';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
 
-import { PageHeader, QueryBoundary, ConfirmDialog } from '@/components/admin/ui';
+import { ConfirmDialog, DialogHeader, FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
@@ -177,7 +177,7 @@ export default function AdminEventsPage() {
         }
       />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -210,7 +210,7 @@ export default function AdminEventsPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ flexGrow: 1 }}
         />
-      </Stack>
+      </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable
@@ -432,7 +432,7 @@ function EventDialog({
 
   return (
     <Dialog open onClose={saving || uploading ? undefined : onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{eventId ? 'Edit event' : 'New event'}</DialogTitle>
+      <DialogHeader icon={CalendarMonthRoundedIcon} title={eventId ? 'Edit event' : 'New event'} onClose={saving || uploading ? undefined : onClose} />
       <DialogContent dividers>
         {!loaded ? (
           <Typography color="text.secondary">Loading…</Typography>

@@ -31,7 +31,7 @@ import StarBorderRoundedIcon from '@mui/icons-material/StarBorderRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 
-import { PageHeader, QueryBoundary, ConfirmDialog } from '@/components/admin/ui';
+import { ConfirmDialog, FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
@@ -212,11 +212,7 @@ export default function AdminReviewsPage() {
         }
       />
 
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.5}
-        sx={{ mb: 2, flexWrap: 'wrap' }}
-      >
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -261,7 +257,7 @@ export default function AdminReviewsPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ minWidth: 240, flexGrow: 1 }}
         />
-      </Stack>
+</FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable

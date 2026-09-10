@@ -14,7 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import { PageHeader, QueryBoundary } from '@/components/admin/ui';
+import { FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import {
@@ -95,7 +95,7 @@ export default function AdminMailLogsPage() {
         subtitle="Outbound email attempts. Delivery is best-effort and never blocks core actions."
       />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+      <FilterBar>
         <TextField
           select
           size="small"
@@ -123,7 +123,7 @@ export default function AdminMailLogsPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ flexGrow: 1 }}
         />
-      </Stack>
+      </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable
