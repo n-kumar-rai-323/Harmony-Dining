@@ -8,10 +8,7 @@ import {
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
 
-import Footer from '@/components/layout/footer';
-import Navbar from '@/components/layout/navbar';
-import SitePromoOverlay from '@/components/promotions/site-promo-overlay';
-import SocialFloatingBar from '@/components/layout/social-floating-bar';
+import SiteChrome from '@/components/layout/site-chrome';
 import ThemeInitScript from '@/theme/theme-init-script';
 import ThemeRegistry from '@/theme/theme-provider';
 import { env } from '@/lib/env';
@@ -142,15 +139,7 @@ export default async function RootLayout({
         <ThemeInitScript />
 
         <ThemeRegistry>
-          {/* Global first-visit promotional overlay */}
-          <SitePromoOverlay />
-
-          <Navbar />
-          <SocialFloatingBar links={social} />
-
-          {children}
-
-          <Footer social={social} />
+          <SiteChrome social={social}>{children}</SiteChrome>
         </ThemeRegistry>
       </body>
     </html>
