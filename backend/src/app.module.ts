@@ -25,6 +25,7 @@ import { SiteSettingsModule } from './site-settings/site-settings.module';
 import { HomepageModule } from './homepage/homepage.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -98,6 +99,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     HomepageModule,
     NotificationsModule,
     MailModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [
