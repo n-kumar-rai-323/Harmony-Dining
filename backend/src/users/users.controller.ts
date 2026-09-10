@@ -50,6 +50,12 @@ export class UsersController {
   }
 
   @RequirePermissions('users.read')
+  @Get('permissions')
+  listPermissions() {
+    return this.users.listPermissions();
+  }
+
+  @RequirePermissions('users.read')
   @Get(':id')
   get(@Param('id') id: string) {
     return this.users.getById(id);

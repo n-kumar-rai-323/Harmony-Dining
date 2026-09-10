@@ -71,6 +71,14 @@ export class UsersService {
     return { items, total, page, pageSize };
   }
 
+  /** The full permission catalogue, for the per-user override editor. */
+  async listPermissions() {
+    return this.prisma.permission.findMany({
+      select: { key: true, description: true },
+      orderBy: { key: 'asc' },
+    });
+  }
+
   async getById(id: string) {
     const user = await this.prisma.adminUser.findFirst({
       where: { id, deletedAt: null },
