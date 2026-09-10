@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 
 import { AdminAuthProvider } from '@/lib/admin/auth-context';
 import AdminAuthGate from '@/components/admin/admin-auth-gate';
+import { ToastProvider } from '@/components/admin/toast';
 
 /**
  * Admin area shell. Client-rendered: auth is a signed http-only cookie the
@@ -20,7 +21,9 @@ export default function AdminLayout({
 
   return (
     <AdminAuthProvider>
-      {isLogin ? children : <AdminAuthGate>{children}</AdminAuthGate>}
+      <ToastProvider>
+        {isLogin ? children : <AdminAuthGate>{children}</AdminAuthGate>}
+      </ToastProvider>
     </AdminAuthProvider>
   );
 }

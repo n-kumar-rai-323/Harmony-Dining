@@ -7,6 +7,11 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Stack,
   Typography,
 } from '@mui/material';
@@ -74,6 +79,48 @@ export function StatCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+export function ConfirmDialog({
+  open,
+  title,
+  body,
+  confirmLabel = 'Confirm',
+  destructive = false,
+  busy = false,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  body: React.ReactNode;
+  confirmLabel?: string;
+  destructive?: boolean;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Dialog open={open} onClose={busy ? undefined : onCancel} maxWidth="xs" fullWidth>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent>
+        <DialogContentText component="div">{body}</DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel} disabled={busy}>
+          Cancel
+        </Button>
+        <Button
+          onClick={onConfirm}
+          disabled={busy}
+          variant="contained"
+          color={destructive ? 'error' : 'primary'}
+        >
+          {busy ? 'Working…' : confirmLabel}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
