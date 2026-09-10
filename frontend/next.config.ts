@@ -1,12 +1,73 @@
 import type { NextConfig } from 'next';
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+/** Origins the browser talks to directly (admin panel + public form posts). */
+function apiOrigins(): string[] {
+  const out = new Set<string>();
+  for (const raw of [
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.NEXT_PUBLIC_MEDIA_URL,
+  ]) {
+    if (!raw) continue;
+    try {
+      out.add(new URL(raw).origin);
+    } catch {
+      // ignore malformed env value
+    }
+  }
+  return [...out];
+}
+
 /**
- * Security headers applied to every route. Kept intentionally
- * conservative — no CSP yet because the app loads Google Fonts,
- * OpenStreetMap tiles and MUI's runtime styles; add a hashed or
- * nonce-based CSP once those sources are enumerated.
+ * Content Security Policy. Enumerates every source the app actually uses:
+ *  - Google Fonts CSS + font files
+ *  - OpenStreetMap raster tiles (Leaflet) — OSRM routing is proxied through
+ *    our own /api/route handler, so it needs no browser origin
+ *  - MUI/emotion inject runtime <style> tags -> style-src 'unsafe-inline'
+ *  - Next.js ships small inline bootstrap scripts -> script-src 'unsafe-inline'
+ *  - the backend API origin for browser-side fetches + uploaded media <img>
+ * Dev additionally allows eval + ws for Turbopack HMR.
  */
+function contentSecurityPolicy(): string {
+  const api = apiOrigins();
+  const directives: Record<string, string[]> = {
+    'default-src': ["'self'"],
+    'base-uri': ["'self'"],
+    'object-src': ["'none'"],
+    'frame-ancestors': ["'self'"],
+    'form-action': ["'self'"],
+    'script-src': ["'self'", "'unsafe-inline'", ...(isDev ? ["'unsafe-eval'"] : [])],
+    'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+    'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+    'img-src': [
+      "'self'",
+      'data:',
+      'blob:',
+      'https://*.tile.openstreetmap.org',
+      ...api,
+    ],
+    'connect-src': [
+      "'self'",
+      ...api,
+      ...(isDev ? ['ws:', 'http://localhost:*'] : []),
+    ],
+    'worker-src': ["'self'", 'blob:'],
+    'manifest-src': ["'self'"],
+  };
+  if (!isDev) directives['upgrade-insecure-requests'] = [];
+
+  return Object.entries(directives)
+    .map(([k, v]) => (v.length ? `${k} ${v.join(' ')}` : k))
+    .join('; ');
+}
+
+/** Security headers applied to every route. */
 const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: contentSecurityPolicy(),
+  },
   {
     key: 'X-Content-Type-Options',
     value: 'nosniff',
