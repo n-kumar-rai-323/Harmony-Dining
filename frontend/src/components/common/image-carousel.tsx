@@ -56,6 +56,8 @@ type ImageCarouselProps = {
   priorityFirst?: boolean;
   /** next/image quality (defaults to 80). */
   quality?: number;
+  /** Show the prev/next arrows. Off for full-bleed background use. */
+  controls?: boolean;
 };
 
 export default function ImageCarousel({
@@ -63,6 +65,7 @@ export default function ImageCarousel({
   sizes = '(max-width: 1199px) 100vw, 55vw',
   priorityFirst = true,
   quality = 80,
+  controls = true,
 }: ImageCarouselProps) {
   const items = slides.slice(0, MAX_SLIDES);
 
@@ -229,21 +232,25 @@ export default function ImageCarousel({
           ARROW CONTROLS
       ===================================================== */}
 
-      <CarouselArrow
-        edge="left"
-        label="Previous photo"
-        onClick={() => goTo(-1)}
-      >
-        <ChevronLeftRoundedIcon />
-      </CarouselArrow>
+      {controls ? (
+        <>
+          <CarouselArrow
+            edge="left"
+            label="Previous photo"
+            onClick={() => goTo(-1)}
+          >
+            <ChevronLeftRoundedIcon />
+          </CarouselArrow>
 
-      <CarouselArrow
-        edge="right"
-        label="Next photo"
-        onClick={() => goTo(1)}
-      >
-        <ChevronRightRoundedIcon />
-      </CarouselArrow>
+          <CarouselArrow
+            edge="right"
+            label="Next photo"
+            onClick={() => goTo(1)}
+          >
+            <ChevronRightRoundedIcon />
+          </CarouselArrow>
+        </>
+      ) : null}
     </Box>
   );
 }

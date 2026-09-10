@@ -12,11 +12,14 @@ import {
 
 import {
   alpha,
+  type Theme,
 } from '@mui/material/styles';
 
 import ArrowOutwardRoundedIcon from '@mui/icons-material/ArrowOutwardRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
+import PlaceRoundedIcon from '@mui/icons-material/PlaceRounded';
 import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded';
 
 import type {
@@ -94,8 +97,8 @@ export type HeroContent = {
 
   /*
    * Optional rotating hero photos (max 5). When present the
-   * right-hand image becomes a gentle sliding carousel; when
-   * empty it falls back to the single `image` above.
+   * background becomes a gentle sliding carousel; when empty
+   * it falls back to the single `image` above.
    *
    * Later: populated by the admin-managed homepage API.
    */
@@ -233,6 +236,69 @@ const heroContent: HeroContent = {
 };
 
 /* =========================================================
+   BUTTON STYLE
+
+   One filled gold CTA, the rest translucent glass so the
+   copy stays readable on top of the background photo.
+========================================================= */
+
+function heroButtonSx(
+  variant: HeroAction['variant'],
+) {
+  if (variant === 'primary') {
+    return {
+      bgcolor:
+        'secondary.main',
+
+      color:
+        'secondary.contrastText',
+
+      '&:hover': {
+        bgcolor:
+          'secondary.dark',
+      },
+    };
+  }
+
+  return {
+    color:
+      'common.white',
+
+    borderColor:
+      (theme: Theme) =>
+        alpha(
+          theme.palette.common.white,
+          0.4,
+        ),
+
+    bgcolor:
+      (theme: Theme) =>
+        alpha(
+          theme.palette.primary.dark,
+          0.35,
+        ),
+
+    backdropFilter:
+      'blur(8px)',
+
+    WebkitBackdropFilter:
+      'blur(8px)',
+
+    '&:hover': {
+      borderColor:
+        'secondary.main',
+
+      bgcolor:
+        (theme: Theme) =>
+          alpha(
+            theme.palette.primary.dark,
+            0.6,
+          ),
+    },
+  };
+}
+
+/* =========================================================
    HERO SECTION
 ========================================================= */
 
@@ -314,15 +380,29 @@ export default function HeroSection({
         overflow:
           'hidden',
 
+        display:
+          'flex',
+
+        alignItems:
+          'center',
+
+        minHeight: {
+          xs:
+            'auto',
+
+          md:
+            '90vh',
+        },
+
         bgcolor:
-          'background.default',
+          'primary.dark',
 
         color:
-          'text.primary',
+          'common.white',
       }}
     >
       {/* =====================================================
-          DECORATIVE BACKGROUND
+          FULL-BLEED BACKGROUND PHOTO
       ===================================================== */}
 
       <Box
@@ -334,28 +414,72 @@ export default function HeroSection({
           inset:
             0,
 
+          zIndex:
+            0,
+        }}
+      >
+        <ImageCarousel
+          slides={heroSlides}
+          sizes="100vw"
+          controls={false}
+        />
+      </Box>
+
+      {/* =====================================================
+          GRADIENT SCRIM
+
+          A light wash — darker at the left and foot of the
+          frame so the headline and buttons stay legible,
+          fading to near-clear over the rest of the photo.
+      ===================================================== */}
+
+      <Box
+        aria-hidden
+        sx={{
+          position:
+            'absolute',
+
+          inset:
+            0,
+
+          zIndex:
+            1,
+
           pointerEvents:
             'none',
 
           background:
             (theme) => `
-              radial-gradient(
-                circle at 12% 18%,
+              linear-gradient(
+                90deg,
                 ${alpha(
                   theme.palette
-                    .secondary.main,
-                  0.13,
-                )},
-                transparent 30%
+                    .primary.dark,
+                  0.74,
+                )} 0%,
+                ${alpha(
+                  theme.palette
+                    .primary.dark,
+                  0.44,
+                )} 42%,
+                ${alpha(
+                  theme.palette
+                    .primary.dark,
+                  0.12,
+                )} 100%
               ),
-              radial-gradient(
-                circle at 82% 20%,
+              linear-gradient(
+                0deg,
                 ${alpha(
                   theme.palette
-                    .secondary.main,
-                  0.05,
-                )},
-                transparent 28%
+                    .primary.dark,
+                  0.55,
+                )} 0%,
+                ${alpha(
+                  theme.palette
+                    .primary.dark,
+                  0,
+                )} 46%
               )
             `,
         }}
@@ -372,98 +496,449 @@ export default function HeroSection({
             'relative',
 
           zIndex:
-            1,
+            2,
 
           py: {
             xs:
-              5,
-
-            sm:
-              6,
-
-            md:
               7,
 
-            lg:
+            sm:
               8,
+
+            md:
+              10,
           },
         }}
       >
         <Box
           sx={{
-            display:
-              'grid',
-
-            gridTemplateColumns:
-              {
-                xs:
-                  'minmax(0,1fr)',
-
-                lg:
-                  'minmax(0,0.9fr) minmax(0,1.1fr)',
-              },
-
-            alignItems:
-              'center',
-
-            gap: {
+            maxWidth: {
               xs:
-                4,
+                '100%',
 
               md:
-                5,
-
-              lg:
-                7,
-            },
-
-            minHeight: {
-              xs:
-                'auto',
-
-              lg:
-                620,
+                640,
             },
           }}
         >
-          {/* =================================================
-              LEFT CONTENT
-          ================================================= */}
+          {/* EYEBROW */}
 
-          <Box
-            sx={{
-              position:
-                'relative',
+          {eyebrow ? (
+            <Box
+              sx={{
+                display:
+                  'inline-flex',
 
-              zIndex:
-                2,
+                alignItems:
+                  'center',
 
-              minWidth:
-                0,
-
-              maxWidth: {
-                xs:
-                  '100%',
-
-                lg:
-                  680,
-              },
-
-              py: {
-                xs:
+                gap:
                   1,
 
-                sm:
-                  2,
+                maxWidth:
+                  '100%',
 
-                lg:
-                  3,
-              },
+                px:
+                  1.6,
+
+                py:
+                  0.7,
+
+                borderRadius:
+                  '999px',
+
+                bgcolor:
+                  (theme) =>
+                    alpha(
+                      theme.palette
+                        .primary.dark,
+                      0.55,
+                    ),
+
+                border:
+                  '1px solid',
+
+                borderColor:
+                  (theme) =>
+                    alpha(
+                      theme.palette
+                        .secondary.main,
+                      0.4,
+                    ),
+
+                backdropFilter:
+                  'blur(8px)',
+
+                WebkitBackdropFilter:
+                  'blur(8px)',
+              }}
+            >
+              <AutoAwesomeRoundedIcon
+                sx={{
+                  fontSize:
+                    16,
+
+                  flexShrink:
+                    0,
+
+                  color:
+                    'secondary.main',
+                }}
+              />
+
+              <Typography
+                variant="overline"
+                sx={{
+                  minWidth:
+                    0,
+
+                  color:
+                    'secondary.main',
+
+                  overflowWrap:
+                    'anywhere',
+                }}
+              >
+                {eyebrow}
+              </Typography>
+            </Box>
+          ) : null}
+
+          {/* TITLE */}
+
+          <Typography
+            id="home-hero-title"
+            component="h1"
+            variant="h1"
+            sx={{
+              mt:
+                eyebrow
+                  ? {
+                      xs:
+                        2,
+
+                      md:
+                        2.5,
+                    }
+                  : 0,
+
+              maxWidth:
+                680,
+
+              color:
+                'common.white',
+
+              textShadow:
+                '0 2px 24px rgba(0,0,0,0.45)',
+
+              overflowWrap:
+                'break-word',
+
+              hyphens:
+                'auto',
             }}
           >
-            {/* EYEBROW */}
+            {title}
 
-            {eyebrow ? (
+            {accentTitle ? (
+              <Box
+                component="span"
+                sx={{
+                  display:
+                    'block',
+
+                  color:
+                    'secondary.main',
+                }}
+              >
+                {accentTitle}
+              </Box>
+            ) : null}
+          </Typography>
+
+          {/* DESCRIPTION */}
+
+          {description ? (
+            <Typography
+              component="p"
+              variant="body1"
+              sx={{
+                mt: {
+                  xs:
+                    2.5,
+
+                  md:
+                    3,
+                },
+
+                maxWidth:
+                  565,
+
+                color:
+                  (theme) =>
+                    alpha(
+                      theme.palette
+                        .common.white,
+                      0.88,
+                    ),
+
+                textShadow:
+                  '0 1px 12px rgba(0,0,0,0.4)',
+
+                overflowWrap:
+                  'break-word',
+              }}
+            >
+              {description}
+            </Typography>
+          ) : null}
+
+          {/* =================================================
+              MOBILE CTA
+
+              Priority:
+              1. Event / Hall
+              2. Table
+              3. Menu
+          ================================================= */}
+
+          {validActions.length >
+          0 ? (
+            <Stack
+              sx={{
+                display: {
+                  xs:
+                    'flex',
+
+                  sm:
+                    'none',
+                },
+
+                mt:
+                  3.5,
+
+                gap:
+                  1.1,
+              }}
+            >
+              {validActions.map(
+                (
+                  action,
+                ) => {
+                  const Icon =
+                    getHeroActionIcon(action.iconKey);
+
+                  const isPrimary =
+                    action.variant ===
+                    'primary';
+
+                  return (
+                    <Link
+                      key={`${action.href}-${action.label}`}
+                      href={
+                        action.href
+                      }
+                      style={{
+                        display:
+                          'block',
+
+                        width:
+                          '100%',
+
+                        textDecoration:
+                          'none',
+                      }}
+                    >
+                      <Button
+                        fullWidth
+                        size="large"
+                        variant={
+                          isPrimary
+                            ? 'contained'
+                            : 'outlined'
+                        }
+                        startIcon={
+                          Icon ? (
+                            <Icon />
+                          ) : undefined
+                        }
+                        endIcon={
+                          isPrimary ? (
+                            <ArrowOutwardRoundedIcon />
+                          ) : undefined
+                        }
+                        sx={{
+                          minHeight:
+                            isPrimary
+                              ? 56
+                              : 52,
+
+                          px:
+                            2.5,
+
+                          whiteSpace:
+                            'normal',
+
+                          textAlign:
+                            'center',
+
+                          ...heroButtonSx(
+                            action.variant,
+                          ),
+                        }}
+                      >
+                        {
+                          action.label
+                        }
+                      </Button>
+                    </Link>
+                  );
+                },
+              )}
+            </Stack>
+          ) : null}
+
+          {/* =================================================
+              TABLET / DESKTOP CTA
+          ================================================= */}
+
+          {validActions.length >
+          0 ? (
+            <Box
+              sx={{
+                display: {
+                  xs:
+                    'none',
+
+                  sm:
+                    'flex',
+                },
+
+                mt:
+                  4,
+
+                alignItems:
+                  'center',
+
+                flexWrap:
+                  'wrap',
+
+                gap:
+                  1.25,
+              }}
+            >
+              {validActions.map(
+                (
+                  action,
+                ) => {
+                  const Icon =
+                    getHeroActionIcon(action.iconKey);
+
+                  const isPrimary =
+                    action.variant ===
+                    'primary';
+
+                  return (
+                    <Link
+                      key={`${action.href}-${action.label}`}
+                      href={
+                        action.href
+                      }
+                      style={{
+                        display:
+                          'inline-flex',
+
+                        textDecoration:
+                          'none',
+                      }}
+                    >
+                      <Button
+                        variant={
+                          isPrimary
+                            ? 'contained'
+                            : 'outlined'
+                        }
+                        size="large"
+                        startIcon={
+                          Icon ? (
+                            <Icon />
+                          ) : undefined
+                        }
+                        endIcon={
+                          isPrimary ? (
+                            <ArrowOutwardRoundedIcon />
+                          ) : undefined
+                        }
+                        sx={{
+                          minHeight:
+                            52,
+
+                          px: {
+                            sm:
+                              2.4,
+
+                            md:
+                              3,
+                          },
+
+                          whiteSpace:
+                            'nowrap',
+
+                          ...heroButtonSx(
+                            action.variant,
+                          ),
+                        }}
+                      >
+                        {
+                          action.label
+                        }
+                      </Button>
+                    </Link>
+                  );
+                },
+              )}
+            </Box>
+          ) : null}
+
+          {/* =================================================
+              LOCATION / CAPTION
+          ================================================= */}
+
+          {(imageLabel ||
+            imageCaption) ? (
+            <Box
+              sx={{
+                mt: {
+                  xs:
+                    3.5,
+
+                  md:
+                    4,
+                },
+              }}
+            >
+              {imageLabel &&
+              imageCaption ? (
+                <Typography
+                  variant="overline"
+                  sx={{
+                    display:
+                      'block',
+
+                    mb:
+                      0.5,
+
+                    color:
+                      'secondary.light',
+
+                    overflowWrap:
+                      'anywhere',
+                  }}
+                >
+                  {imageLabel}
+                </Typography>
+              ) : null}
+
               <Box
                 sx={{
                   display:
@@ -482,693 +957,88 @@ export default function HeroSection({
                 <Box
                   aria-hidden
                   sx={{
-                    width:
-                      36,
+                    display:
+                      'inline-flex',
 
-                    height:
-                      1,
+                    alignItems:
+                      'center',
+
+                    justifyContent:
+                      'center',
 
                     flexShrink:
                       0,
 
+                    width:
+                      34,
+
+                    height:
+                      34,
+
+                    borderRadius:
+                      '50%',
+
                     bgcolor:
-                      'secondary.main',
+                      (theme) =>
+                        alpha(
+                          theme.palette
+                            .primary.dark,
+                          0.6,
+                        ),
+
+                    border:
+                      '1px solid',
+
+                    borderColor:
+                      (theme) =>
+                        alpha(
+                          theme.palette
+                            .secondary.main,
+                          0.4,
+                        ),
+
+                    backdropFilter:
+                      'blur(8px)',
+
+                    WebkitBackdropFilter:
+                      'blur(8px)',
                   }}
-                />
+                >
+                  <PlaceRoundedIcon
+                    sx={{
+                      fontSize:
+                        18,
+
+                      color:
+                        'secondary.main',
+                    }}
+                  />
+                </Box>
 
                 <Typography
-                  variant="overline"
+                  variant="body2"
                   sx={{
                     minWidth:
                       0,
 
                     color:
-                      'secondary.main',
+                      (theme) =>
+                        alpha(
+                          theme.palette
+                            .common.white,
+                          0.85,
+                        ),
 
                     overflowWrap:
                       'anywhere',
                   }}
                 >
-                  {eyebrow}
+                  {imageCaption ||
+                    imageLabel}
                 </Typography>
               </Box>
-            ) : null}
-
-            {/* TITLE */}
-
-            <Typography
-              id="home-hero-title"
-              component="h1"
-              variant="h1"
-              sx={{
-                mt:
-                  eyebrow
-                    ? {
-                        xs:
-                          2,
-
-                        md:
-                          2.5,
-                      }
-                    : 0,
-
-                maxWidth:
-                  680,
-
-                color:
-                  'text.primary',
-
-                overflowWrap:
-                  'break-word',
-
-                hyphens:
-                  'auto',
-              }}
-            >
-              {title}
-
-              {accentTitle ? (
-                <Box
-                  component="span"
-                  sx={{
-                    display:
-                      'block',
-
-                    color:
-                      'secondary.main',
-                  }}
-                >
-                  {accentTitle}
-                </Box>
-              ) : null}
-            </Typography>
-
-            {/* DESCRIPTION */}
-
-            {description ? (
-              <Typography
-                component="p"
-                variant="body1"
-                sx={{
-                  mt: {
-                    xs:
-                      2.5,
-
-                    md:
-                      3,
-                  },
-
-                  maxWidth:
-                    565,
-
-                  color:
-                    'text.secondary',
-
-                  overflowWrap:
-                    'break-word',
-                }}
-              >
-                {description}
-              </Typography>
-            ) : null}
-
-            {/* =================================================
-                MOBILE CTA
-
-                Priority:
-                1. Event / Hall
-                2. Table
-                3. Menu
-            ================================================= */}
-
-            {validActions.length >
-            0 ? (
-              <Stack
-                sx={{
-                  display: {
-                    xs:
-                      'flex',
-
-                    sm:
-                      'none',
-                  },
-
-                  mt:
-                    3.5,
-
-                  gap:
-                    1.1,
-                }}
-              >
-                {validActions.map(
-                  (
-                    action,
-                  ) => {
-                    const Icon =
-                      getHeroActionIcon(action.iconKey);
-
-                    const isPrimary =
-                      action.variant ===
-                      'primary';
-
-                    const isSecondary =
-                      action.variant ===
-                      'secondary';
-
-                    return (
-                      <Link
-                        key={`${action.href}-${action.label}`}
-                        href={
-                          action.href
-                        }
-                        style={{
-                          display:
-                            'block',
-
-                          width:
-                            '100%',
-
-                          textDecoration:
-                            'none',
-                        }}
-                      >
-                        <Button
-                          fullWidth
-                          size="large"
-                          variant={
-                            isPrimary
-                              ? 'contained'
-                              : 'outlined'
-                          }
-                          startIcon={
-                            Icon ? (
-                              <Icon />
-                            ) : undefined
-                          }
-                          endIcon={
-                            isPrimary ? (
-                              <ArrowOutwardRoundedIcon />
-                            ) : undefined
-                          }
-                          sx={{
-                            minHeight:
-                              isPrimary
-                                ? 56
-                                : 52,
-
-                            px:
-                              2.5,
-
-                            ...(isPrimary
-                              ? {
-                                  bgcolor:
-                                    'primary.main',
-
-                                  color:
-                                    'primary.contrastText',
-
-                                  '&:hover':
-                                    {
-                                      bgcolor:
-                                        'primary.dark',
-                                    },
-                                }
-                              : isSecondary
-                                ? {
-                                    color:
-                                      'text.primary',
-
-                                    borderColor:
-                                      'secondary.main',
-
-                                    bgcolor:
-                                      'background.paper',
-
-                                    '&:hover':
-                                      {
-                                        borderColor:
-                                          'secondary.dark',
-
-                                        bgcolor:
-                                          'action.hover',
-                                      },
-                                  }
-                                : {
-                                    color:
-                                      'text.secondary',
-
-                                    borderColor:
-                                      'divider',
-
-                                    bgcolor:
-                                      'transparent',
-
-                                    '&:hover':
-                                      {
-                                        color:
-                                          'primary.main',
-
-                                        borderColor:
-                                          'primary.main',
-
-                                        bgcolor:
-                                          'action.hover',
-                                      },
-                                  }),
-
-                            whiteSpace:
-                              'normal',
-
-                            textAlign:
-                              'center',
-                          }}
-                        >
-                          {
-                            action.label
-                          }
-                        </Button>
-                      </Link>
-                    );
-                  },
-                )}
-              </Stack>
-            ) : null}
-
-            {/* =================================================
-                TABLET / DESKTOP CTA
-            ================================================= */}
-
-            {validActions.length >
-            0 ? (
-              <Box
-                sx={{
-                  display: {
-                    xs:
-                      'none',
-
-                    sm:
-                      'flex',
-                  },
-
-                  mt:
-                    4,
-
-                  alignItems:
-                    'center',
-
-                  flexWrap:
-                    'wrap',
-
-                  gap:
-                    1.25,
-                }}
-              >
-                {validActions.map(
-                  (
-                    action,
-                  ) => {
-                    const Icon =
-                      getHeroActionIcon(action.iconKey);
-
-                    const isPrimary =
-                      action.variant ===
-                      'primary';
-
-                    const isSecondary =
-                      action.variant ===
-                      'secondary';
-
-                    return (
-                      <Link
-                        key={`${action.href}-${action.label}`}
-                        href={
-                          action.href
-                        }
-                        style={{
-                          display:
-                            'inline-flex',
-
-                          textDecoration:
-                            'none',
-                        }}
-                      >
-                        <Button
-                          variant={
-                            isPrimary
-                              ? 'contained'
-                              : 'outlined'
-                          }
-                          size="large"
-                          startIcon={
-                            Icon ? (
-                              <Icon />
-                            ) : undefined
-                          }
-                          endIcon={
-                            isPrimary ? (
-                              <ArrowOutwardRoundedIcon />
-                            ) : undefined
-                          }
-                          sx={{
-                            minHeight:
-                              52,
-
-                            px: {
-                              sm:
-                                2.4,
-
-                              md:
-                                3,
-                            },
-
-                            ...(isPrimary
-                              ? {
-                                  bgcolor:
-                                    'primary.main',
-
-                                  color:
-                                    'primary.contrastText',
-
-                                  '&:hover':
-                                    {
-                                      bgcolor:
-                                        'primary.dark',
-                                    },
-                                }
-                              : isSecondary
-                                ? {
-                                    color:
-                                      'text.primary',
-
-                                    borderColor:
-                                      'secondary.main',
-
-                                    '&:hover':
-                                      {
-                                        borderColor:
-                                          'secondary.dark',
-
-                                        bgcolor:
-                                          'action.hover',
-                                      },
-                                  }
-                                : {
-                                    color:
-                                      'text.secondary',
-
-                                    borderColor:
-                                      'divider',
-
-                                    '&:hover':
-                                      {
-                                        color:
-                                          'primary.main',
-
-                                        borderColor:
-                                          'primary.main',
-
-                                        bgcolor:
-                                          'action.hover',
-                                      },
-                                  }),
-
-                            whiteSpace:
-                              'nowrap',
-                          }}
-                        >
-                          {
-                            action.label
-                          }
-                        </Button>
-                      </Link>
-                    );
-                  },
-                )}
-              </Box>
-            ) : null}
-          </Box>
-
-          {/* =================================================
-              RIGHT IMAGE
-          ================================================= */}
-
-          <Box
-            sx={{
-              position:
-                'relative',
-
-              width:
-                '100%',
-
-              minWidth:
-                0,
-
-              aspectRatio: {
-                xs:
-                  '4 / 3',
-
-                sm:
-                  '16 / 11',
-
-                md:
-                  '16 / 10',
-
-                lg:
-                  'auto',
-              },
-
-              minHeight: {
-                lg:
-                  620,
-              },
-
-              overflow:
-                'hidden',
-
-              bgcolor:
-                'action.hover',
-
-              borderRadius: {
-                xs:
-                  1.5,
-
-                md:
-                  2,
-              },
-
-              boxShadow:
-                (theme) =>
-                  theme
-                    .shadows[12],
-            }}
-          >
-            <ImageCarousel
-              slides={heroSlides}
-              sizes="(max-width: 1199px) 100vw, 55vw"
-            />
-
-            {/* IMAGE GRADIENT */}
-
-            <Box
-              aria-hidden
-              sx={{
-                position:
-                  'absolute',
-
-                inset:
-                  0,
-
-                background:
-                  (
-                    theme,
-                  ) => `
-                    linear-gradient(
-                      180deg,
-                      ${alpha(
-                        theme
-                          .palette
-                          .primary
-                          .dark,
-                        0.02,
-                      )} 0%,
-                      ${alpha(
-                        theme
-                          .palette
-                          .primary
-                          .dark,
-                        0.02,
-                      )} 48%,
-                      ${alpha(
-                        theme
-                          .palette
-                          .primary
-                          .dark,
-                        0.42,
-                      )} 100%
-                    )
-                  `,
-
-                pointerEvents:
-                  'none',
-              }}
-            />
-
-            {/* =================================================
-                IMAGE LABEL
-            ================================================= */}
-
-            {(imageLabel ||
-              imageCaption) ? (
-              <Box
-                sx={{
-                  position:
-                    'absolute',
-
-                  left: {
-                    xs:
-                      14,
-
-                    sm:
-                      22,
-
-                    md:
-                      26,
-                  },
-
-                  right: {
-                    xs:
-                      14,
-
-                    sm:
-                      'auto',
-                  },
-
-                  bottom: {
-                    xs:
-                      14,
-
-                    sm:
-                      22,
-
-                    md:
-                      26,
-                  },
-
-                  maxWidth: {
-                    xs:
-                      'calc(100% - 28px)',
-
-                    sm:
-                      310,
-                  },
-
-                  minWidth:
-                    0,
-
-                  px: {
-                    xs:
-                      1.6,
-
-                    md:
-                      2.1,
-                  },
-
-                  py: {
-                    xs:
-                      1.3,
-
-                    md:
-                      1.6,
-                  },
-
-                  borderRadius:
-                    1,
-
-                  bgcolor:
-                    (
-                      theme,
-                    ) =>
-                      alpha(
-                        theme
-                          .palette
-                          .primary
-                          .dark,
-                        0.9,
-                      ),
-
-                  border:
-                    '1px solid',
-
-                  borderColor:
-                    (
-                      theme,
-                    ) =>
-                      alpha(
-                        theme
-                          .palette
-                          .secondary
-                          .main,
-                        0.28,
-                      ),
-
-                  backdropFilter:
-                    'blur(12px)',
-
-                  WebkitBackdropFilter:
-                    'blur(12px)',
-
-                  boxShadow:
-                    (
-                      theme,
-                    ) =>
-                      theme
-                        .shadows[8],
-                }}
-              >
-                {imageLabel ? (
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      display:
-                        'block',
-
-                      color:
-                        'secondary.light',
-
-                      overflowWrap:
-                        'anywhere',
-                    }}
-                  >
-                    {
-                      imageLabel
-                    }
-                  </Typography>
-                ) : null}
-
-                {imageCaption ? (
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      mt:
-                        imageLabel
-                          ? 0.6
-                          : 0,
-
-                      color:
-                        'primary.contrastText',
-
-                      overflowWrap:
-                        'anywhere',
-                    }}
-                  >
-                    {
-                      imageCaption
-                    }
-                  </Typography>
-                ) : null}
-              </Box>
-            ) : null}
-          </Box>
+            </Box>
+          ) : null}
         </Box>
       </Container>
     </Box>
