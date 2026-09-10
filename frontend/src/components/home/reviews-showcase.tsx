@@ -46,7 +46,7 @@ import {
    ReviewsShowcase content prop
 ========================================================= */
 
-type ReviewItem = {
+export type ReviewItem = {
   id: string;
   name: string;
   occasion?: string;
@@ -94,7 +94,7 @@ type ReviewsShowcaseProps = {
    before production public launch.
 ========================================================= */
 
-const initialReviewsContent: ReviewsShowcaseContent = {
+export const initialReviewsContent: ReviewsShowcaseContent = {
   enabled: true,
 
   eyebrow: 'Guest Stories',
