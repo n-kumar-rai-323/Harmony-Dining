@@ -388,7 +388,10 @@ export default function HeroSection({
 
         minHeight: {
           xs:
-            'auto',
+            '88vh',
+
+          sm:
+            '90vh',
 
           md:
             '90vh',
@@ -428,9 +431,10 @@ export default function HeroSection({
       {/* =====================================================
           GRADIENT SCRIM
 
-          A light wash — darker at the left and foot of the
-          frame so the headline and buttons stay legible,
-          fading to near-clear over the rest of the photo.
+          Keeps the copy legible on top of the photo. On phones
+          the content is centred and full-width, so the wash is
+          vertical; from tablet up it darkens the left and foot
+          of the frame and fades to near-clear elsewhere.
       ===================================================== */}
 
       <Box
@@ -447,6 +451,61 @@ export default function HeroSection({
 
           pointerEvents:
             'none',
+
+          display: {
+            xs:
+              'block',
+
+            sm:
+              'none',
+          },
+
+          background:
+            (theme) => `
+              linear-gradient(
+                180deg,
+                ${alpha(
+                  theme.palette
+                    .primary.dark,
+                  0.52,
+                )} 0%,
+                ${alpha(
+                  theme.palette
+                    .primary.dark,
+                  0.44,
+                )} 45%,
+                ${alpha(
+                  theme.palette
+                    .primary.dark,
+                  0.78,
+                )} 100%
+              )
+            `,
+        }}
+      />
+
+      <Box
+        aria-hidden
+        sx={{
+          position:
+            'absolute',
+
+          inset:
+            0,
+
+          zIndex:
+            1,
+
+          pointerEvents:
+            'none',
+
+          display: {
+            xs:
+              'none',
+
+            sm:
+              'block',
+          },
 
           background:
             (theme) => `
