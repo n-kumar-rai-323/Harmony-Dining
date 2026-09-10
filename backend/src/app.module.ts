@@ -23,6 +23,8 @@ import { EnquiriesModule } from './enquiries/enquiries.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SiteSettingsModule } from './site-settings/site-settings.module';
 import { HomepageModule } from './homepage/homepage.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MailModule } from './mail/mail.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -94,6 +96,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ReviewsModule,
     SiteSettingsModule,
     HomepageModule,
+    NotificationsModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [

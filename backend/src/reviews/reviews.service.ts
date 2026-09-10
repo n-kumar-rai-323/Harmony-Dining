@@ -7,6 +7,7 @@ import { Prisma, type Review } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService, type AuditContext } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { paginate, type PaginationQuery } from '../common/pagination';
 import type {
   AdminCreateReviewDto,
@@ -40,6 +41,7 @@ export class ReviewsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ---------------- public ----------------
@@ -302,18 +304,12 @@ export class ReviewsService {
   }
 
   private async notifyCreated(row: Review): Promise<void> {
-    try {
-      await this.prisma.notification.create({
-        data: {
-          type: 'REVIEW_CREATED',
-          title: 'New review submitted',
-          message: `${row.name} · ${row.rating}★`,
-          entityType: 'Review',
-          entityId: row.id,
-        },
-      });
-    } catch {
-      // A dropped notification must not fail the guest's submission.
-    }
+    await this.notifications.emit({
+      type: 'REVIEW_CREATED',
+      title: 'New review submitted',
+      message: `${row.name} · ${row.rating}★`,
+      entityType: 'Review',
+      entityId: row.id,
+    });
   }
 }

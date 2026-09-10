@@ -12,6 +12,7 @@ import { randomBytes } from 'node:crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService, type AuditContext } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { paginate } from '../common/pagination';
 import type {
   CreateEventEnquiryDto,
@@ -51,6 +52,7 @@ export class EnquiriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ---------------- public ----------------
@@ -287,21 +289,15 @@ export class EnquiriesService {
   }
 
   private async notifyCreated(row: EventEnquiry): Promise<void> {
-    try {
-      await this.prisma.notification.create({
-        data: {
-          type: 'ENQUIRY_CREATED',
-          title: 'New private event enquiry',
-          message: `${row.fullName} · ${row.eventType} · ${toDateString(
-            row.preferredDate,
-          )} · ${row.guests} guests`,
-          entityType: 'EventEnquiry',
-          entityId: row.id,
-        },
-      });
-    } catch {
-      // A dropped notification must not fail the guest's submission.
-    }
+    await this.notifications.emit({
+      type: 'ENQUIRY_CREATED',
+      title: 'New private event enquiry',
+      message: `${row.fullName} · ${row.eventType} · ${toDateString(
+        row.preferredDate,
+      )} · ${row.guests} guests`,
+      entityType: 'EventEnquiry',
+      entityId: row.id,
+    });
   }
 }
 

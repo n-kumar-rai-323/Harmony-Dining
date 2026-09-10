@@ -14,6 +14,7 @@ import { randomBytes } from 'node:crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService, type AuditContext } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { paginate } from '../common/pagination';
 import type {
   CreateReservationDto,
@@ -53,6 +54,7 @@ export class ReservationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ---------------- settings ----------------
@@ -393,19 +395,13 @@ export class ReservationsService {
     message: string;
     entityId: string;
   }): Promise<void> {
-    try {
-      await this.prisma.notification.create({
-        data: {
-          type: input.type,
-          title: input.title,
-          message: input.message,
-          entityType: 'Reservation',
-          entityId: input.entityId,
-        },
-      });
-    } catch {
-      // A dropped notification is not worth failing the request over.
-    }
+    await this.notifications.emit({
+      type: input.type,
+      title: input.title,
+      message: input.message,
+      entityType: 'Reservation',
+      entityId: input.entityId,
+    });
   }
 }
 

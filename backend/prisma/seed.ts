@@ -52,6 +52,7 @@ const PERMISSIONS: Record<string, string> = {
   'settings.read': 'View site settings',
   'settings.manage': 'Edit site settings',
   'notifications.read': 'View notifications',
+  'mail.read': 'View the outbound email log',
   'users.read': 'View admin users',
   'users.manage': 'Create, edit, disable admin users and manage roles',
   'audit.read': 'View the audit log',
