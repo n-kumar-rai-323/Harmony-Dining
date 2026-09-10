@@ -1,5 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { paginate } from '../common/pagination';
+import type { AuditQueryDto } from './dto';
 
 export interface AuditContext {
   actorId?: string | null;
@@ -87,5 +90,105 @@ export class AuditService {
         error instanceof Error ? error.stack : String(error),
       );
     }
+  }
+
+  /* ----------------------------------------------------- read (audit.read) */
+
+  private buildWhere(query: AuditQueryDto): Prisma.AuditLogWhereInput {
+    const and: Prisma.AuditLogWhereInput[] = [];
+
+    if (query.actorId) and.push({ actorId: query.actorId });
+    if (query.actorEmail) {
+      and.push({
+        actorEmail: { equals: query.actorEmail, mode: 'insensitive' },
+      });
+    }
+    if (query.action) and.push({ action: query.action });
+    if (query.actionPrefix) {
+      and.push({ action: { startsWith: query.actionPrefix } });
+    }
+    if (query.entityType) and.push({ entityType: query.entityType });
+    if (query.entityId) and.push({ entityId: query.entityId });
+
+    if (query.from || query.to) {
+      and.push({
+        createdAt: {
+          ...(query.from ? { gte: new Date(query.from) } : {}),
+          ...(query.to ? { lt: new Date(query.to) } : {}),
+        },
+      });
+    }
+
+    if (query.search) {
+      const contains = { contains: query.search, mode: 'insensitive' } as const;
+      and.push({
+        OR: [
+          { action: contains },
+          { entityType: contains },
+          { entityId: contains },
+          { actorEmail: contains },
+        ],
+      });
+    }
+
+    return and.length ? { AND: and } : {};
+  }
+
+  /** Paginated, filtered view of the append-only audit trail. */
+  async list(query: AuditQueryDto) {
+    const where = this.buildWhere(query);
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.auditLog.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        include: {
+          actor: { select: { id: true, email: true, name: true, status: true } },
+        },
+      }),
+      this.prisma.auditLog.count({ where }),
+    ]);
+
+    return paginate(rows, total, query.page, query.pageSize);
+  }
+
+  async get(id: string) {
+    const row = await this.prisma.auditLog.findUnique({
+      where: { id },
+      include: {
+        actor: { select: { id: true, email: true, name: true, status: true } },
+      },
+    });
+    if (!row) throw new NotFoundException('Audit entry not found');
+    return row;
+  }
+
+  /**
+   * Distinct `action` and `entityType` values (with counts) so the admin UI
+   * can populate filter dropdowns without scanning the whole table.
+   */
+  async facets() {
+    const [actions, entityTypes] = await this.prisma.$transaction([
+      this.prisma.auditLog.groupBy({
+        by: ['action'],
+        _count: true,
+        orderBy: { action: 'asc' },
+      }),
+      this.prisma.auditLog.groupBy({
+        by: ['entityType'],
+        _count: true,
+        orderBy: { entityType: 'asc' },
+      }),
+    ]);
+
+    return {
+      actions: actions.map((a) => ({ value: a.action, count: a._count })),
+      entityTypes: entityTypes.map((e) => ({
+        value: e.entityType,
+        count: e._count,
+      })),
+    };
   }
 }
