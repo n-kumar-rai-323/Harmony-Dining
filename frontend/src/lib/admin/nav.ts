@@ -29,7 +29,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: 'Reviews', href: '/admin/reviews', icon: RateReviewRoundedIcon, permission: 'reviews.read', ready: true },
   { label: 'Menu', href: '/admin/menu', icon: RestaurantMenuRoundedIcon, permission: 'menu.read', ready: true },
   { label: 'Gallery', href: '/admin/gallery', icon: PhotoLibraryRoundedIcon, permission: 'gallery.read', ready: true },
-  { label: 'Events', href: '/admin/events', icon: CalendarMonthRoundedIcon, permission: 'events.read', ready: false },
+  { label: 'Events', href: '/admin/events', icon: CalendarMonthRoundedIcon, permission: 'events.read', ready: true },
   { label: 'Homepage', href: '/admin/homepage', icon: WebRoundedIcon, permission: 'homepage.read', ready: true },
   { label: 'Site settings', href: '/admin/site-settings', icon: TuneRoundedIcon, permission: 'settings.read', ready: true },
   { label: 'Admin users', href: '/admin/users', icon: GroupRoundedIcon, permission: 'users.read', ready: false },

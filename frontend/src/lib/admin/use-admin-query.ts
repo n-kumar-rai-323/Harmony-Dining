@@ -29,7 +29,8 @@ function messageFor(err: unknown): string {
  * Minimal GET hook for admin screens: fetches `path` on mount and whenever it
  * (or `reload`) changes, with derived loading/error state. Aborts the in-flight
  * request on unmount or path change. `loading` is true whenever the last
- * settled result does not match the current request.
+ * settled result does not match the current request. An empty `path` disables
+ * the query (stays idle, no request).
  */
 export function useAdminQuery<T>(path: string): QueryState<T> {
   const [tick, setTick] = useState(0);
@@ -38,6 +39,7 @@ export function useAdminQuery<T>(path: string): QueryState<T> {
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
+    if (!path) return;
     const controller = new AbortController();
 
     adminApi
@@ -55,6 +57,10 @@ export function useAdminQuery<T>(path: string): QueryState<T> {
 
     return () => controller.abort();
   }, [path, tick]);
+
+  if (!path) {
+    return { data: null, loading: false, error: null, reload };
+  }
 
   const fresh = result !== null && result.path === path && result.tick === tick;
 
