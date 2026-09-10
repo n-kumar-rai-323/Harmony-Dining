@@ -84,54 +84,60 @@ export function StatCard({
   label,
   value,
   hint,
+  trend,
   emphasis,
+  filled,
   icon: Icon,
   color = 'primary',
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
+  /** Small delta line, e.g. { dir: 'up', text: '15% vs last week' }. */
+  trend?: { dir: 'up' | 'down' | 'flat'; text: string };
   emphasis?: boolean;
+  /** Solid colour-filled card (used for the primary metric). */
+  filled?: boolean;
   icon?: SvgIconComponent;
   color?: StatColor;
 }) {
+  const trendColor =
+    trend?.dir === 'up' ? 'success.main' : trend?.dir === 'down' ? 'error.main' : 'text.secondary';
+
   return (
     <Card
       sx={{
         height: '100%',
         position: 'relative',
         overflow: 'hidden',
-        borderColor: emphasis ? `${color}.main` : 'divider',
+        border: filled ? 'none' : undefined,
+        borderColor: !filled && emphasis ? `${color}.main` : 'divider',
+        color: filled ? `${color}.contrastText` : 'text.primary',
         bgcolor: (t) =>
-          emphasis ? alpha(t.palette[color].main, 0.06) : 'background.paper',
-        transition: 'border-color .15s, box-shadow .15s',
-        '&:hover': { boxShadow: (t) => t.shadows[2] },
+          filled
+            ? t.palette[color].main
+            : emphasis
+              ? alpha(t.palette[color].main, 0.06)
+              : 'background.paper',
+        transition: 'box-shadow .15s',
+        '&:hover': { boxShadow: (t) => t.shadows[filled ? 6 : 2] },
       }}
     >
-      {/* accent edge */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          bgcolor: `${color}.main`,
-          opacity: emphasis ? 1 : 0.35,
-        }}
-      />
-      <CardContent sx={{ pl: 2.5 }}>
-        <Stack
-          direction="row"
-          sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
-        >
-          <Typography
-            variant="overline"
-            color="text.secondary"
-            sx={{ lineHeight: 1.4 }}
-          >
-            {label}
-          </Typography>
+      {!filled && (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 3,
+            bgcolor: `${color}.main`,
+            opacity: emphasis ? 1 : 0.3,
+          }}
+        />
+      )}
+      <CardContent sx={{ pl: filled ? 2 : 2.5 }}>
+        <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', mb: 1.25 }}>
           {Icon && (
             <Box
               sx={{
@@ -141,25 +147,48 @@ export function StatCard({
                 height: 34,
                 borderRadius: 2,
                 flexShrink: 0,
-                color: `${color}.main`,
-                bgcolor: (t) => alpha(t.palette[color].main, 0.12),
+                color: filled ? `${color}.main` : `${color}.main`,
+                bgcolor: (t) =>
+                  filled ? t.palette[color].contrastText : alpha(t.palette[color].main, 0.12),
               }}
             >
               <Icon sx={{ fontSize: 19 }} />
             </Box>
           )}
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 600, opacity: filled ? 0.95 : 0.9 }}
+          >
+            {label}
+          </Typography>
         </Stack>
-        <Typography
-          variant="h3"
-          sx={{ fontWeight: 700, lineHeight: 1.15, mt: 0.5, fontSize: '2rem' }}
-        >
+        <Typography sx={{ fontWeight: 800, lineHeight: 1.1, fontSize: '1.9rem' }}>
           {value}
         </Typography>
+        {trend && (
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mt: 0.5,
+              fontWeight: 700,
+              color: filled ? 'inherit' : trendColor,
+              opacity: filled ? 0.95 : 1,
+            }}
+          >
+            {trend.dir === 'up' ? '↑ ' : trend.dir === 'down' ? '↓ ' : ''}
+            {trend.text}
+          </Typography>
+        )}
         {hint && (
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mt: 0.5 }}
+            sx={{
+              display: 'block',
+              mt: trend ? 0 : 0.5,
+              color: filled ? 'inherit' : 'text.secondary',
+              opacity: filled ? 0.85 : 1,
+            }}
           >
             {hint}
           </Typography>
