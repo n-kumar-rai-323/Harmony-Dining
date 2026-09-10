@@ -12,7 +12,9 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  ListItemButton,
   ListItemIcon,
+  ListItemText,
   Menu,
   MenuItem,
   Paper,
@@ -209,13 +211,13 @@ export default function AdminMenuPage() {
               </IconButton>
             )}
           </Stack>
-          <MenuItem
+          <ListItemButton
             selected={selectedCat === ''}
             onClick={() => setSelectedCat('')}
             sx={{ borderRadius: 1 }}
           >
-            All items
-          </MenuItem>
+            <ListItemText primary="All items" slotProps={{ primary: { variant: 'body2' } }} />
+          </ListItemButton>
           <QueryBoundary loading={cats.loading && !cats.data} error={cats.error} onRetry={cats.reload}>
             {MENU_GROUPS.map((g) =>
               grouped[g].length ? (
@@ -229,7 +231,7 @@ export default function AdminMenuPage() {
                       direction="row"
                       sx={{ alignItems: 'center' }}
                     >
-                      <MenuItem
+                      <ListItemButton
                         selected={selectedCat === c.id}
                         onClick={() => setSelectedCat(c.id)}
                         sx={{ borderRadius: 1, flexGrow: 1, minWidth: 0 }}
@@ -247,7 +249,7 @@ export default function AdminMenuPage() {
                         {c.status === 'DRAFT' && (
                           <Chip size="small" label="draft" variant="outlined" />
                         )}
-                      </MenuItem>
+                      </ListItemButton>
                       {(canUpdate || canPublish || canDelete) && (
                         <IconButton
                           size="small"
