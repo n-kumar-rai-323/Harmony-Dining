@@ -24,7 +24,7 @@ export type AdminNavItem = {
 
 export const ADMIN_NAV: AdminNavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: DashboardRoundedIcon, permission: 'dashboard.read', ready: true },
-  { label: 'Reservations', href: '/admin/reservations', icon: EventSeatRoundedIcon, permission: 'reservations.read', ready: false },
+  { label: 'Reservations', href: '/admin/reservations', icon: EventSeatRoundedIcon, permission: 'reservations.read', ready: true },
   { label: 'Event enquiries', href: '/admin/enquiries', icon: CelebrationRoundedIcon, permission: 'enquiries.read', ready: false },
   { label: 'Reviews', href: '/admin/reviews', icon: RateReviewRoundedIcon, permission: 'reviews.read', ready: true },
   { label: 'Menu', href: '/admin/menu', icon: RestaurantMenuRoundedIcon, permission: 'menu.read', ready: false },
