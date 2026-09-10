@@ -63,6 +63,24 @@ function mediaRemotePatterns() {
   return patterns;
 }
 
+// Next 16 refuses to optimise images whose host resolves to a private IP
+// (SSRF hardening). In local dev the media API is on localhost, so allow it
+// there only — never when the media host is a real remote domain.
+function mediaIsLocal() {
+  const sources = [
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.NEXT_PUBLIC_MEDIA_URL,
+  ].filter(Boolean) as string[];
+  return sources.some((raw) => {
+    try {
+      const h = new URL(raw).hostname;
+      return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+    } catch {
+      return false;
+    }
+  });
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
@@ -75,6 +93,9 @@ const nextConfig: NextConfig = {
     // Every `quality` value passed to next/image must be listed here (Next 16).
     qualities: [75, 80, 85],
     remotePatterns: mediaRemotePatterns(),
+    // Local-dev only: the media API is on localhost. Production media is a
+    // real remote host and this stays false.
+    dangerouslyAllowLocalIP: mediaIsLocal(),
   },
 
   async headers() {
