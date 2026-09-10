@@ -33,6 +33,6 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: 'Homepage', href: '/admin/homepage', icon: WebRoundedIcon, permission: 'homepage.read', ready: true },
   { label: 'Site settings', href: '/admin/site-settings', icon: TuneRoundedIcon, permission: 'settings.read', ready: true },
   { label: 'Admin users', href: '/admin/users', icon: GroupRoundedIcon, permission: 'users.read', ready: true },
-  { label: 'Audit log', href: '/admin/audit', icon: HistoryRoundedIcon, permission: 'audit.read', ready: false },
-  { label: 'Mail log', href: '/admin/mail-logs', icon: MarkEmailReadRoundedIcon, permission: 'mail.read', ready: false },
+  { label: 'Audit log', href: '/admin/audit', icon: HistoryRoundedIcon, permission: 'audit.read', ready: true },
+  { label: 'Mail log', href: '/admin/mail-logs', icon: MarkEmailReadRoundedIcon, permission: 'mail.read', ready: true },
 ];
