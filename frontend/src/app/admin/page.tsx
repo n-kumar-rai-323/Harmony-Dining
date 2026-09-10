@@ -16,6 +16,13 @@ import {
   Typography,
 } from '@mui/material';
 
+import EventSeatRoundedIcon from '@mui/icons-material/EventSeatRounded';
+import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
+import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
+import StarRoundedIcon from '@mui/icons-material/StarRounded';
+import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
+
 import { PageHeader, QueryBoundary, StatCard } from '@/components/admin/ui';
 import { useAdminQuery } from '@/lib/admin/use-admin-query';
 import {
@@ -56,6 +63,8 @@ export default function AdminDashboardPage() {
                   value={data.reservations.pending}
                   hint={`${data.reservations.upcoming} upcoming · ${data.reservations.today} today`}
                   emphasis={data.reservations.pending > 0}
+                  icon={EventSeatRoundedIcon}
+                  color="warning"
                 />
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
@@ -64,6 +73,8 @@ export default function AdminDashboardPage() {
                   value={data.enquiries.open}
                   hint={`${data.enquiries.upcoming} upcoming`}
                   emphasis={data.enquiries.open > 0}
+                  icon={CelebrationRoundedIcon}
+                  color="info"
                 />
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
@@ -72,6 +83,8 @@ export default function AdminDashboardPage() {
                   value={data.reviews.pendingModeration}
                   hint={`${data.reviews.published} published · ${data.reviews.featured} featured`}
                   emphasis={data.reviews.pendingModeration > 0}
+                  icon={RateReviewRoundedIcon}
+                  color="secondary"
                 />
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
@@ -79,6 +92,8 @@ export default function AdminDashboardPage() {
                   label="Avg. review rating"
                   value={data.reviews.averageRating ?? '—'}
                   hint="approved & published"
+                  icon={StarRoundedIcon}
+                  color="success"
                 />
               </Grid>
             </Grid>
@@ -93,6 +108,7 @@ export default function AdminDashboardPage() {
                     label="New reservations"
                     value={data.reservations.last30Days}
                     hint={`${data.reservations.last7Days} in last 7d`}
+                    icon={TrendingUpRoundedIcon}
                   />
                 </Grid>
                 <Grid size={{ xs: 6, md: 3 }}>
@@ -100,6 +116,7 @@ export default function AdminDashboardPage() {
                     label="New enquiries"
                     value={data.enquiries.last30Days}
                     hint={`${data.enquiries.last7Days} in last 7d`}
+                    icon={TrendingUpRoundedIcon}
                   />
                 </Grid>
                 <Grid size={{ xs: 6, md: 3 }}>
@@ -107,6 +124,7 @@ export default function AdminDashboardPage() {
                     label="New reviews"
                     value={data.reviews.last30Days}
                     hint={`${data.reviews.last7Days} in last 7d`}
+                    icon={TrendingUpRoundedIcon}
                   />
                 </Grid>
                 <Grid size={{ xs: 6, md: 3 }}>
@@ -114,6 +132,8 @@ export default function AdminDashboardPage() {
                     label="Admin actions (24h)"
                     value={data.activity.auditLast24h}
                     hint={`${data.notifications.unread} unread notifications`}
+                    icon={HistoryRoundedIcon}
+                    color="info"
                   />
                 </Grid>
               </Grid>

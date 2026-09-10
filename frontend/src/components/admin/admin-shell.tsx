@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 
 import {
   AppBar,
+  Avatar,
   Box,
   Chip,
   Divider,
@@ -17,6 +18,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Stack,
   Toolbar,
   Tooltip,
   Typography,
@@ -47,13 +49,28 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const nav = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Toolbar sx={{ px: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 0.2 }}>
+      <Toolbar sx={{ px: 2.5, gap: 1.25 }}>
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            borderRadius: 2,
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            fontWeight: 800,
+            fontSize: 15,
+          }}
+        >
+          H
+        </Box>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
           Harmony Admin
         </Typography>
       </Toolbar>
       <Divider />
-      <List sx={{ px: 1.5, py: 1, flexGrow: 1, overflowY: 'auto' }}>
+      <List sx={{ px: 1.25, py: 1.25, flexGrow: 1, overflowY: 'auto' }}>
         {items.map((item) => {
           const selected =
             item.href === '/admin'
@@ -68,14 +85,21 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               selected={selected}
               disabled={!item.ready}
               onClick={() => setMobileOpen(false)}
-              sx={{ borderRadius: 1.5, mb: 0.25 }}
+              sx={{ mb: 0.25, py: 0.85 }}
             >
-              <ListItemIcon sx={{ minWidth: 40 }}>
+              <ListItemIcon
+                sx={{ minWidth: 36, color: selected ? 'primary.main' : 'inherit' }}
+              >
                 <Icon fontSize="small" />
               </ListItemIcon>
               <ListItemText
                 primary={item.label}
-                slotProps={{ primary: { variant: 'body2' } }}
+                slotProps={{
+                  primary: {
+                    variant: 'body2',
+                    sx: { fontWeight: selected ? 700 : 500 },
+                  },
+                }}
               />
               {!item.ready && (
                 <Chip label="soon" size="small" variant="outlined" />
@@ -116,25 +140,46 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           >
             <MenuRoundedIcon />
           </IconButton>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, flexGrow: 1 }}>
-            {current?.label ?? 'Admin'}
-          </Typography>
+          <Stack
+            direction="row"
+            spacing={1.25}
+            sx={{ alignItems: 'center', flexGrow: 1, minWidth: 0 }}
+          >
+            {current?.icon && (
+              <current.icon sx={{ color: 'primary.main' }} fontSize="small" />
+            )}
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
+              {current?.label ?? 'Admin'}
+            </Typography>
+          </Stack>
 
           {user && (
             <>
               <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
                   {user.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {user.role}
                 </Typography>
               </Box>
+              <Avatar
+                sx={{
+                  width: 34,
+                  height: 34,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  bgcolor: 'primary.main',
+                }}
+              >
+                {user.name.trim().charAt(0).toUpperCase()}
+              </Avatar>
               <IconButton
                 onClick={(e) => setMenuAnchor(e.currentTarget)}
                 aria-label="Account menu"
+                size="small"
               >
-                <LogoutRoundedIcon />
+                <LogoutRoundedIcon fontSize="small" />
               </IconButton>
               <Menu
                 anchorEl={menuAnchor}
