@@ -27,6 +27,7 @@ import CollectionsRoundedIcon from '@mui/icons-material/CollectionsRounded';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
+import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
 import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded';
 
 import ThemeSwitcher from './theme-switcher';
@@ -55,6 +56,11 @@ const navItems = [
     label: 'Gallery',
     href: '/gallery',
     icon: CollectionsRoundedIcon,
+  },
+  {
+    label: 'Reviews',
+    href: '/reviews',
+    icon: RateReviewRoundedIcon,
   },
   {
     label: 'Location',
