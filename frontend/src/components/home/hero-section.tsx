@@ -425,6 +425,7 @@ export default function HeroSection({
           slides={heroSlides}
           sizes="100vw"
           controls={false}
+          ignoreReducedMotion
         />
       </Box>
 

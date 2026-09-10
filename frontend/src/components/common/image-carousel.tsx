@@ -58,6 +58,11 @@ type ImageCarouselProps = {
   quality?: number;
   /** Show the prev/next arrows. Off for full-bleed background use. */
   controls?: boolean;
+  /**
+   * Keep the slow cross-fade sweep even when the OS asks to reduce
+   * motion. Only for a purely decorative background slot.
+   */
+  ignoreReducedMotion?: boolean;
 };
 
 export default function ImageCarousel({
@@ -66,14 +71,18 @@ export default function ImageCarousel({
   priorityFirst = true,
   quality = 80,
   controls = true,
+  ignoreReducedMotion = false,
 }: ImageCarouselProps) {
   const items = slides.slice(0, MAX_SLIDES);
 
   const count = items.length;
 
-  const prefersReducedMotion = useMediaQuery(
+  const systemReducedMotion = useMediaQuery(
     '(prefers-reduced-motion: reduce)',
   );
+
+  const prefersReducedMotion =
+    ignoreReducedMotion ? false : systemReducedMotion;
 
   const [activeIndex, setActiveIndex] =
     useState(0);
