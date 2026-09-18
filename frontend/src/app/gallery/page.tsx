@@ -17,6 +17,7 @@ import CollectionsRoundedIcon from '@mui/icons-material/CollectionsRounded';
 
 import GalleryExperience from '@/components/gallery/gallery-experience';
 import { getGalleryItems } from '@/lib/api/gallery';
+import { getPageHeaders } from '@/lib/api/page-headers';
 
 export const metadata: Metadata = {
   title: 'Gallery',
@@ -25,7 +26,10 @@ export const metadata: Metadata = {
 };
 
 export default async function GalleryPage() {
-  const galleryItems = await getGalleryItems();
+  const [galleryItems, { gallery: hero }] = await Promise.all([
+    getGalleryItems(),
+    getPageHeaders(),
+  ]);
 
   return (
     <Box
@@ -80,8 +84,8 @@ export default async function GalleryPage() {
             }}
           >
             <Image
-              src="/images/home/harmony-gallery-dining-hall.jpg"
-              alt="Harmony dining and celebration gallery"
+              src={hero?.image ?? '/images/home/harmony-gallery-dining-hall.jpg'}
+              alt={hero?.imageAlt ?? 'Harmony dining and celebration gallery'}
               fill
               priority
               quality={80}
@@ -144,7 +148,7 @@ export default async function GalleryPage() {
                     color: 'secondary.light',
                   }}
                 >
-                  Our Gallery
+                  {hero?.eyebrow ?? 'Our Gallery'}
                 </Typography>
 
                 <Typography
@@ -158,7 +162,7 @@ export default async function GalleryPage() {
                     color: 'primary.contrastText',
                   }}
                 >
-                  Moments at Harmony.
+                  {hero?.title ?? 'Moments at Harmony.'}
                 </Typography>
 
                 <Typography
@@ -173,9 +177,8 @@ export default async function GalleryPage() {
                     opacity: 0.8,
                   }}
                 >
-                  Discover Harmony through our dining
-                  spaces, celebrations and memorable
-                  moments shared with our guests.
+                  {hero?.description ??
+                    'Discover Harmony through our dining spaces, celebrations and memorable moments shared with our guests.'}
                 </Typography>
 
                 <Stack
@@ -195,7 +198,7 @@ export default async function GalleryPage() {
                   }}
                 >
                   <Link
-                    href="/events"
+                    href={hero?.primaryCta?.href ?? '/events'}
                     style={{
                       textDecoration: 'none',
                     }}
@@ -216,12 +219,12 @@ export default async function GalleryPage() {
                         },
                       }}
                     >
-                      View Our Events
+                      {hero?.primaryCta?.label ?? 'View Our Events'}
                     </Button>
                   </Link>
 
                   <Link
-                    href="#gallery"
+                    href={hero?.secondaryCta?.href ?? '#gallery'}
                     style={{
                       textDecoration: 'none',
                     }}
@@ -256,7 +259,7 @@ export default async function GalleryPage() {
                         },
                       }}
                     >
-                      View Photos
+                      {hero?.secondaryCta?.label ?? 'View Photos'}
                     </Button>
                   </Link>
                 </Stack>

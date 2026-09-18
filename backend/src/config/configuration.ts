@@ -81,11 +81,6 @@ export interface AppConfig {
       password: string;
     };
   };
-  seed: {
-    superAdminEmail: string;
-    superAdminPassword: string;
-    superAdminName: string;
-  };
   logLevel: string;
 }
 
@@ -156,14 +151,6 @@ export function configuration(): AppConfig {
         user: optional('SMTP_USER', ''),
         password: optional('SMTP_PASSWORD', ''),
       },
-    },
-    seed: {
-      superAdminEmail: optional(
-        'SEED_SUPERADMIN_EMAIL',
-        'owner@harmonydining.example',
-      ),
-      superAdminPassword: optional('SEED_SUPERADMIN_PASSWORD', 'change-me'),
-      superAdminName: optional('SEED_SUPERADMIN_NAME', 'Harmony Owner'),
     },
     logLevel: optional('LOG_LEVEL', 'info'),
   };

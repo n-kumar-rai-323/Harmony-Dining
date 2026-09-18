@@ -1,4 +1,5 @@
 import {
+  IsEmail,
   IsEnum,
   IsInt,
   IsOptional,
@@ -36,7 +37,7 @@ export class CreateReservationDto {
   phone!: string;
 
   @IsOptional()
-  @IsString()
+  @IsEmail()
   @MaxLength(200)
   email?: string;
 

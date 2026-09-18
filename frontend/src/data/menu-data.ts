@@ -10,14 +10,20 @@ export type MenuVariant = {
   price: number;
 };
 
+export type DietaryType = 'VEG' | 'NON_VEG' | 'EGG';
+
 export type MenuItem = {
   name: string;
   price?: number | null;
-  priceLabel?: string;
   variants?: MenuVariant[];
   description?: string;
   status: MenuStatus;
   note?: string;
+  imageUrl?: string | null;
+  ingredients?: string[];
+  tags?: string[];
+  dietary?: DietaryType | null;
+  isAvailable?: boolean;
 };
 
 export type MenuCategory = {
@@ -91,12 +97,7 @@ export const menuData: MenuCategory[] = [
       { name: 'Amritsari Machhi', price: 460, status: 'VERIFIED' },
       { name: 'Tandoori Prawns', price: 690, status: 'VERIFIED' },
       { name: 'Tandoori Tiger Prawns', price: 890, status: 'VERIFIED' },
-      {
-        name: 'Tandoori Pomfret',
-        price: null,
-        priceLabel: 'Market Price',
-        status: 'VERIFIED',
-      },
+      { name: 'Tandoori Pomfret', price: 990, status: 'VERIFIED' },
       { name: 'Tandoori Non-Veg Platter', price: 1690, status: 'VERIFIED' },
     ],
   },

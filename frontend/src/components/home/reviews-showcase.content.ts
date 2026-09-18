@@ -15,6 +15,10 @@ export type ReviewItem = {
   rating: number;
   review: string;
   avatarUrl?: string | null;
+  /** How many photos the guest uploaded (avatarUrl is only the first one). */
+  photoCount?: number;
+  /** ISO date the review was submitted — shown as the guestbook entry date. */
+  createdAt?: string;
 };
 
 export type ReviewsShowcaseContent = {
@@ -38,9 +42,13 @@ export type ReviewsShowcaseContent = {
 /* =========================================================
    DEVELOPMENT CONTENT
 
-   IMPORTANT:
-   Replace these with real approved/published reviews
-   before production public launch.
+   Sample copy only — used as GuestbookCarousel's default `content` prop
+   when no content is passed at all (e.g. isolated component preview).
+   The live homepage (app/page.tsx) never falls back to these `reviews`
+   for real visitors: it always passes the real (possibly empty) Reviews
+   API result, so the section simply doesn't render until a real review
+   is approved and featured. Do not wire these sample reviews into any
+   production fallback path.
 ========================================================= */
 
 export const initialReviewsContent: ReviewsShowcaseContent = {

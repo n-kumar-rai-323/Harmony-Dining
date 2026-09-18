@@ -8,12 +8,26 @@ import { Prisma, type Review } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService, type AuditContext } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { paginate, type PaginationQuery } from '../common/pagination';
+import { paginate } from '../common/pagination';
 import type {
   AdminCreateReviewDto,
   CreateReviewDto,
+  PublicReviewQueryDto,
+  ReplyToReviewDto,
   ReviewQueryDto,
 } from './dto';
+
+export interface PublicReviewStats {
+  total: number;
+  average: number;
+  breakdown: Record<1 | 2 | 3 | 4 | 5, number>;
+  topRoles: string[];
+}
+
+export interface ReviewPhotoSummary {
+  id: string;
+  url: string;
+}
 
 /** Fields safe to expose on the public site. */
 export interface PublicReview {
@@ -23,9 +37,23 @@ export interface PublicReview {
   rating: number;
   comment: string;
   createdAt: Date;
+  photos: ReviewPhotoSummary[];
+  reply: string | null;
+  repliedAt: Date | null;
 }
 
-function toPublic(row: Review): PublicReview {
+const PHOTOS_INCLUDE = {
+  photos: {
+    orderBy: { sortOrder: 'asc' as const },
+    include: { media: { select: { id: true, url: true } } },
+  },
+};
+
+type ReviewWithPhotos = Review & {
+  photos: { media: { id: string; url: string } }[];
+};
+
+function toPublic(row: ReviewWithPhotos): PublicReview {
   return {
     id: row.id,
     name: row.name,
@@ -33,6 +61,9 @@ function toPublic(row: Review): PublicReview {
     rating: row.rating,
     comment: row.comment,
     createdAt: row.createdAt,
+    photos: row.photos.map((p) => ({ id: p.media.id, url: p.media.url })),
+    reply: row.reply,
+    repliedAt: row.repliedAt,
   };
 }
 
@@ -48,6 +79,17 @@ export class ReviewsService {
 
   /** Anyone can submit; it is never visible until an admin approves + publishes. */
   async submitPublic(dto: CreateReviewDto, meta: { ip?: string | null }) {
+    const mediaIds = [...new Set(dto.mediaIds ?? [])].slice(0, 3);
+
+    if (mediaIds.length > 0) {
+      const found = await this.prisma.media.count({
+        where: { id: { in: mediaIds }, deletedAt: null },
+      });
+      if (found !== mediaIds.length) {
+        throw new BadRequestException('One or more photos could not be found.');
+      }
+    }
+
     const row = await this.prisma.review.create({
       data: {
         name: dto.name,
@@ -58,6 +100,13 @@ export class ReviewsService {
         isPublished: false,
         source: 'WEBSITE',
         ip: meta.ip ?? null,
+        ...(mediaIds.length > 0
+          ? {
+              photos: {
+                create: mediaIds.map((mediaId, i) => ({ mediaId, sortOrder: i })),
+              },
+            }
+          : {}),
       },
     });
 
@@ -66,23 +115,69 @@ export class ReviewsService {
     return { status: row.status };
   }
 
-  /** Approved + published reviews, newest first. For a future "/reviews" page. */
-  async publicList(query: PaginationQuery) {
+  /** Approved + published reviews for the /reviews page: filterable, sortable. */
+  async publicList(query: PublicReviewQueryDto) {
+    const where: Prisma.ReviewWhereInput = {
+      status: 'APPROVED',
+      isPublished: true,
+      deletedAt: null,
+      ...(query.role ? { role: query.role } : {}),
+    };
+    const orderBy: Prisma.ReviewOrderByWithRelationInput[] =
+      query.sort === 'highest'
+        ? [{ rating: 'desc' }, { createdAt: 'desc' }]
+        : query.sort === 'lowest'
+          ? [{ rating: 'asc' }, { createdAt: 'desc' }]
+          : [{ moderatedAt: 'desc' }, { createdAt: 'desc' }];
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.review.findMany({
+        where,
+        orderBy,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        include: PHOTOS_INCLUDE,
+      }),
+      this.prisma.review.count({ where }),
+    ]);
+    return paginate(rows.map(toPublic), total, query.page, query.pageSize);
+  }
+
+  /** Aggregate rating breakdown + top occasion labels, for the /reviews summary. */
+  async publicStats(): Promise<PublicReviewStats> {
     const where: Prisma.ReviewWhereInput = {
       status: 'APPROVED',
       isPublished: true,
       deletedAt: null,
     };
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.review.findMany({
-        where,
-        orderBy: [{ moderatedAt: 'desc' }, { createdAt: 'desc' }],
-        skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize,
-      }),
+    const [total, avgAgg, byRating, byRole] = await Promise.all([
       this.prisma.review.count({ where }),
+      this.prisma.review.aggregate({ where, _avg: { rating: true } }),
+      this.prisma.review.groupBy({
+        by: ['rating'],
+        where,
+        _count: { rating: true },
+      }),
+      this.prisma.review.groupBy({
+        by: ['role'],
+        where: { ...where, role: { not: null } },
+        _count: { role: true },
+        orderBy: { _count: { role: 'desc' } },
+        take: 6,
+      }),
     ]);
-    return paginate(rows.map(toPublic), total, query.page, query.pageSize);
+
+    const breakdown: PublicReviewStats['breakdown'] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const row of byRating) {
+      const star = row.rating as 1 | 2 | 3 | 4 | 5;
+      if (star >= 1 && star <= 5) breakdown[star] = row._count.rating;
+    }
+
+    return {
+      total,
+      average: Math.round((avgAgg._avg.rating ?? 0) * 10) / 10,
+      breakdown,
+      topRoles: byRole.map((r) => r.role).filter((r): r is string => Boolean(r)),
+    };
   }
 
   /** Featured reviews for the homepage showcase. */
@@ -95,7 +190,8 @@ export class ReviewsService {
         deletedAt: null,
       },
       orderBy: [{ moderatedAt: 'desc' }, { createdAt: 'desc' }],
-      take: Math.min(Math.max(limit, 1), 24),
+      take: Math.min(Math.max(limit, 1), 50),
+      include: PHOTOS_INCLUDE,
     });
     return rows.map(toPublic);
   }
@@ -107,6 +203,16 @@ export class ReviewsService {
     const feature = dto.feature === true;
     if (feature && !approve) {
       throw new BadRequestException('A featured review must also be approved.');
+    }
+
+    const mediaIds = [...new Set(dto.mediaIds ?? [])].slice(0, 3);
+    if (mediaIds.length > 0) {
+      const found = await this.prisma.media.count({
+        where: { id: { in: mediaIds }, deletedAt: null },
+      });
+      if (found !== mediaIds.length) {
+        throw new BadRequestException('One or more photos could not be found.');
+      }
     }
 
     const row = await this.prisma.review.create({
@@ -121,6 +227,13 @@ export class ReviewsService {
         isFeatured: feature,
         moderatedById: approve ? (ctx.actorId ?? null) : null,
         moderatedAt: approve ? new Date() : null,
+        ...(mediaIds.length > 0
+          ? {
+              photos: {
+                create: mediaIds.map((mediaId, i) => ({ mediaId, sortOrder: i })),
+              },
+            }
+          : {}),
       },
     });
 
@@ -157,19 +270,26 @@ export class ReviewsService {
         orderBy: [{ createdAt: 'desc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
+        include: PHOTOS_INCLUDE,
       }),
       this.prisma.review.count({ where }),
     ]);
 
-    return paginate(rows, total, query.page, query.pageSize);
+    return paginate(
+      rows.map((r) => ({ ...r, photos: r.photos.map((p) => ({ id: p.media.id, url: p.media.url })) })),
+      total,
+      query.page,
+      query.pageSize,
+    );
   }
 
   async get(id: string) {
     const row = await this.prisma.review.findFirst({
       where: { id, deletedAt: null },
+      include: PHOTOS_INCLUDE,
     });
     if (!row) throw new NotFoundException('Review not found');
-    return row;
+    return { ...row, photos: row.photos.map((p) => ({ id: p.media.id, url: p.media.url })) };
   }
 
   async approve(id: string, ctx: AuditContext) {
@@ -262,6 +382,27 @@ export class ReviewsService {
     return updated;
   }
 
+  /** Sets (or clears, if blank) the admin's public reply to a review. */
+  async reply(id: string, dto: ReplyToReviewDto, ctx: AuditContext) {
+    const current = await this.get(id);
+    const text = dto.reply.trim();
+    const updated = await this.prisma.review.update({
+      where: { id },
+      data: text
+        ? { reply: text, repliedById: ctx.actorId ?? null, repliedAt: new Date() }
+        : { reply: null, repliedById: null, repliedAt: null },
+    });
+    await this.audit.record({
+      ...ctx,
+      action: text ? 'review.reply' : 'review.reply_clear',
+      entityType: 'Review',
+      entityId: id,
+      before: { reply: current.reply },
+      after: { reply: updated.reply },
+    });
+    return updated;
+  }
+
   async softDelete(id: string, ctx: AuditContext) {
     const current = await this.get(id);
     await this.prisma.review.update({
@@ -304,10 +445,11 @@ export class ReviewsService {
   }
 
   private async notifyCreated(row: Review): Promise<void> {
+    const snippet = row.comment.length > 60 ? `${row.comment.slice(0, 60)}…` : row.comment;
     await this.notifications.emit({
       type: 'REVIEW_CREATED',
       title: 'New review submitted',
-      message: `${row.name} · ${row.rating}★`,
+      message: `${row.name} · ${row.rating}★ · ${snippet}`,
       entityType: 'Review',
       entityId: row.id,
     });

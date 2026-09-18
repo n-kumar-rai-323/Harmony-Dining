@@ -8,7 +8,7 @@ import GalleryShowcase from '@/components/home/gallery-showcase';
 import HeroSection from '@/components/home/hero-section';
 import LocationContact from '@/components/home/location-contact';
 import ReservationCta from '@/components/home/reservation-cta';
-import ReviewsShowcase from '@/components/home/reviews-showcase';
+import GuestbookCarousel from '@/components/home/guestbook-carousel';
 import {
   initialReviewsContent,
   type ReviewsShowcaseContent,
@@ -17,6 +17,7 @@ import { getMenuCategories } from '@/lib/api/menu';
 import { getHomeGalleryItems } from '@/lib/api/gallery';
 import { getFeaturedReviews } from '@/lib/api/reviews';
 import { getHomepageContent } from '@/lib/api/homepage';
+import { getSiteSettings } from '@/lib/api/site';
 
 export const metadata: Metadata = {
   description:
@@ -33,12 +34,13 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [menuCategories, galleryItems, featuredReviews, home] =
+  const [menuCategories, galleryItems, featuredReviews, home, siteSettings] =
     await Promise.all([
       getMenuCategories(),
       getHomeGalleryItems(6),
-      getFeaturedReviews(7),
+      getFeaturedReviews(50),
       getHomepageContent(),
+      getSiteSettings(),
     ]);
 
   const galleryPhotos = galleryItems.map((item) => ({
@@ -46,16 +48,36 @@ export default async function Home() {
     alt: item.alt,
   }));
 
-  // Homepage CMS supplies the reviews section copy; the cards come from the
-  // Reviews API, falling back to the showcase's built-in samples.
+  // Homepage CMS supplies the reviews section copy; the cards always come
+  // from the real Reviews API. Never substitute the built-in sample
+  // reviews here — they'd be indistinguishable from real guest
+  // testimonials. If there are zero real featured reviews yet,
+  // GuestbookCarousel renders nothing until the first one is approved.
   const reviewsContent: ReviewsShowcaseContent = {
     ...initialReviewsContent,
     ...(home.reviews ?? {}),
-    reviews:
-      featuredReviews.length > 0
-        ? featuredReviews
-        : initialReviewsContent.reviews,
+    reviews: featuredReviews,
   };
+
+  // The homepage "Location" card has its own opening-hours text field, kept
+  // separate from Site Settings' hours (different card, admin can phrase it
+  // differently). But if an admin only ever filled in Site Settings — the
+  // more obvious place to put business hours — the location card shouldn't
+  // show a "not set up yet" placeholder when real hours already exist.
+  const siteHoursText =
+    siteSettings.contact.hours.length > 0
+      ? siteSettings.contact.hours.map((h) => `${h.label}: ${h.value}`).join(' · ')
+      : undefined;
+
+  const locationContent = home.location
+    ? {
+        ...home.location,
+        location: {
+          ...home.location.location,
+          openingHours: home.location.location.openingHours || siteHoursText,
+        },
+      }
+    : undefined;
 
   return (
     <main>
@@ -73,9 +95,9 @@ export default async function Home() {
 
       <GalleryShowcase photos={galleryPhotos} />
 
-      <ReviewsShowcase content={reviewsContent} />
+      <GuestbookCarousel content={reviewsContent} />
 
-      <LocationContact content={home.location ?? undefined} />
+      <LocationContact content={locationContent} />
     </main>
   );
 }

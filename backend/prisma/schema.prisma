@@ -135,6 +135,7 @@ model Media {
   eventCovers     Event[]        @relation("EventCover")
   eventMedia      EventMedia[]
   eventPosters    EventMedia[]   @relation("EventMediaPoster")
+  reviewPhotos    ReviewPhoto[]
 
   @@index([folder])
   @@index([deletedAt])
@@ -154,6 +155,12 @@ enum MenuGroup {
 enum PublishStatus {
   DRAFT
   PUBLISHED
+}
+
+enum DietaryType {
+  VEG
+  NON_VEG
+  EGG
 }
 
 model MenuCategory {
@@ -183,15 +190,17 @@ model MenuItem {
   name        String
   slug        String
   description String?
-  // Fixed price. Null when the item only has variants or a priceLabel.
+  // Fixed price. Null when the item only has variants.
   price       Decimal?      @db.Decimal(10, 2)
-  priceLabel  String?
-  mediaId     String?
-  media       Media?        @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  mediaId     String
+  media       Media         @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  dietary     DietaryType?
   status      PublishStatus @default(DRAFT)
+  isAvailable Boolean       @default(true)
   isFeatured  Boolean       @default(false)
   sortOrder   Int           @default(0)
   tags        String[]      @default([])
+  ingredients String[]      @default([])
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
@@ -450,6 +459,31 @@ model EventEnquiryStatusHistory {
 }
 
 // ============================================================
+// CONTACT MESSAGES  (general "Get in touch" form — not tied to a
+// reservation date or event type, unlike EventEnquiry)
+// ============================================================
+
+model ContactMessage {
+  id         String    @id @default(cuid())
+  fullName   String
+  email      String
+  phone      String?
+  subject    String?
+  message    String
+  isRead     Boolean   @default(false)
+  readById   String?
+  readAt     DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
+
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("contact_messages")
+}
+
+// ============================================================
 // REVIEWS / TESTIMONIALS
 // ============================================================
 
@@ -476,16 +510,35 @@ model Review {
   source        ReviewSource @default(WEBSITE)
   moderatedById String?
   moderatedAt   DateTime?
+  reply         String?      // admin's public response to this review
+  repliedById   String?
+  repliedAt     DateTime?
   ip            String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   deletedAt     DateTime?
+
+  photos ReviewPhoto[]
 
   @@index([status, isPublished])
   @@index([isFeatured])
   @@index([createdAt])
   @@index([deletedAt])
   @@map("reviews")
+}
+
+/** A guest-submitted photo attached to a review (max 3, enforced in DTO). */
+model ReviewPhoto {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([reviewId, sortOrder])
+  @@map("review_photos")
 }
 
 // ============================================================
@@ -518,6 +571,21 @@ model HomepageSection {
 }
 
 // ============================================================
+// PAGE HEADERS  (key -> validated JSON content, one per public page)
+// keys: menu | events | gallery | about | reservation | contact | reviews
+// ============================================================
+
+model PageHeader {
+  key         String   @id
+  content     Json
+  isPublished Boolean  @default(true)
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("page_headers")
+}
+
+// ============================================================
 // NOTIFICATIONS
 // ============================================================
 
@@ -526,6 +594,7 @@ enum NotificationType {
   RESERVATION_CANCELLED
   ENQUIRY_CREATED
   REVIEW_CREATED
+  CONTACT_MESSAGE_CREATED
   SYSTEM
 }
 

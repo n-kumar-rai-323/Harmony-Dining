@@ -9,29 +9,42 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
-  ListItemIcon,
-  Menu,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
+import PendingActionsRoundedIcon from '@mui/icons-material/PendingActionsRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
-import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
-import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
-import BlockRoundedIcon from '@mui/icons-material/BlockRounded';
+import TodayRoundedIcon from '@mui/icons-material/TodayRounded';
+import EventBusyRoundedIcon from '@mui/icons-material/EventBusyRounded';
+import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
+import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
+import EventRoundedIcon from '@mui/icons-material/EventRounded';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 
-import { FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
+import {
+  DetailField,
+  DialogHeader,
+  FilterBar,
+  FormSection,
+  HistoryTimeline,
+  PageHeader,
+  QueryBoundary,
+  StatCard,
+} from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import { useAdminQuery } from '@/lib/admin/use-admin-query';
 import { useAdminAuth } from '@/lib/admin/auth-context';
-import { AdminApiError } from '@/lib/admin/api';
+import { adminApi, AdminApiError } from '@/lib/admin/api';
+import type { Paginated } from '@/lib/admin/types';
 import {
   reservationsApi,
   RESERVATIONS_PATH,
@@ -54,12 +67,10 @@ const STATUS_COLOR: Record<
   COMPLETED: 'info',
 };
 
-const ACTION_ICON: Record<ReservationAction, React.ReactNode> = {
-  confirm: <CheckCircleRoundedIcon fontSize="small" />,
-  reject: <BlockRoundedIcon fontSize="small" />,
-  cancel: <CancelRoundedIcon fontSize="small" />,
-  complete: <DoneAllRoundedIcon fontSize="small" />,
-};
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -95,12 +106,37 @@ export default function AdminReservationsPage() {
     return () => clearTimeout(t);
   }, [searchInput, setParam]);
 
-  const [menu, setMenu] = useState<{
-    anchor: HTMLElement;
-    row: AdminReservation;
-  } | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const today = todayISO();
+    let cancelled = false;
+    Promise.all([
+      adminApi
+        .get<Paginated<AdminReservation>>(`${RESERVATIONS_PATH}?status=PENDING&pageSize=1`)
+        .then((res) => ['PENDING', res.total] as const)
+        .catch(() => ['PENDING', 0] as const),
+      adminApi
+        .get<Paginated<AdminReservation>>(`${RESERVATIONS_PATH}?status=CONFIRMED&pageSize=1`)
+        .then((res) => ['CONFIRMED', res.total] as const)
+        .catch(() => ['CONFIRMED', 0] as const),
+      adminApi
+        .get<Paginated<AdminReservation>>(`${RESERVATIONS_PATH}?from=${today}&to=${today}&pageSize=1`)
+        .then((res) => ['TODAY', res.total] as const)
+        .catch(() => ['TODAY', 0] as const),
+      adminApi
+        .get<Paginated<AdminReservation>>(`${RESERVATIONS_PATH}?status=CANCELLED&pageSize=1`)
+        .then((res) => ['CANCELLED', res.total] as const)
+        .catch(() => ['CANCELLED', 0] as const),
+    ]).then((entries) => {
+      if (!cancelled) setCounts(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data]);
 
   async function doTransition(
     id: string,
@@ -120,56 +156,14 @@ export default function AdminReservationsPage() {
       return false;
     } finally {
       setBusy(false);
-      setMenu(null);
     }
   }
 
   const columns: Column<AdminReservation>[] = [
-    {
-      key: 'ref',
-      header: 'Reference',
-      width: 150,
-      render: (r) => (
-        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-          {r.reference}
-        </Typography>
-      ),
-    },
-    {
-      key: 'guest',
-      header: 'Guest',
-      render: (r) => (
-        <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {r.fullName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {r.phone}
-            {r.email ? ` · ${r.email}` : ''}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      key: 'when',
-      header: 'Date / time',
-      width: 200,
-      render: (r) => (
-        <Box>
-          <Typography variant="body2">{fmtDate(r.date)}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {r.time}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      key: 'guests',
-      header: 'Guests',
-      width: 70,
-      align: 'right',
-      render: (r) => r.guests,
-    },
+    { key: 'guest', header: 'Full name', render: (r) => r.fullName },
+    { key: 'date', header: 'Date', width: 150, render: (r) => fmtDate(r.date) },
+    { key: 'time', header: 'Time', width: 100, render: (r) => r.time },
+    { key: 'guests', header: 'Guests', width: 90, render: (r) => r.guests },
     {
       key: 'status',
       header: 'Status',
@@ -179,36 +173,21 @@ export default function AdminReservationsPage() {
       ),
     },
     {
-      key: 'source',
-      header: 'Source',
-      width: 90,
-      render: (r) => (
-        <Typography variant="caption" color="text.secondary">
-          {r.source}
-        </Typography>
-      ),
-    },
-    {
       key: 'actions',
       header: '',
       width: 48,
       align: 'right',
-      render: (r) => {
-        const actions = NEXT_ACTIONS[r.status];
-        if (!canUpdate || actions.length === 0) return null;
-        return (
-          <IconButton
-            size="small"
-            disabled={busy}
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenu({ anchor: e.currentTarget, row: r });
-            }}
-          >
-            <MoreVertRoundedIcon fontSize="small" />
-          </IconButton>
-        );
-      },
+      render: (r) => (
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDetailId(r.id);
+          }}
+        >
+          <VisibilityRoundedIcon fontSize="small" />
+        </IconButton>
+      ),
     },
   ];
 
@@ -216,8 +195,22 @@ export default function AdminReservationsPage() {
     <Box>
       <PageHeader
         title="Reservations"
-        subtitle="Table booking requests from the website."
+        subtitle='Submissions from the "Request your table" form on the website.'
       />
+
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 2,
+          gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' },
+          mb: 3,
+        }}
+      >
+        <StatCard label="Pending" value={counts.PENDING ?? '—'} color="warning" icon={PendingActionsRoundedIcon} />
+        <StatCard label="Confirmed" value={counts.CONFIRMED ?? '—'} color="success" icon={CheckCircleRoundedIcon} />
+        <StatCard label="Today" value={counts.TODAY ?? '—'} color="info" icon={TodayRoundedIcon} />
+        <StatCard label="Cancelled" value={counts.CANCELLED ?? '—'} color="secondary" icon={EventBusyRoundedIcon} />
+      </Box>
 
       <FilterBar>
         <TextField
@@ -286,33 +279,6 @@ export default function AdminReservationsPage() {
         />
       </QueryBoundary>
 
-      <Menu
-        anchorEl={menu?.anchor ?? null}
-        open={Boolean(menu)}
-        onClose={() => setMenu(null)}
-      >
-        <MenuItem
-          onClick={() => {
-            setDetailId(menu!.row.id);
-            setMenu(null);
-          }}
-        >
-          View details
-        </MenuItem>
-        <Divider />
-        {menu &&
-          NEXT_ACTIONS[menu.row.status].map((action) => (
-            <MenuItem
-              key={action}
-              onClick={() => doTransition(menu.row.id, action)}
-              sx={action === 'reject' || action === 'cancel' ? { color: 'error.main' } : undefined}
-            >
-              <ListItemIcon>{ACTION_ICON[action]}</ListItemIcon>
-              {ACTION_LABEL[action]}
-            </MenuItem>
-          ))}
-      </Menu>
-
       <Dialog
         open={Boolean(detailId)}
         onClose={() => setDetailId(null)}
@@ -359,55 +325,45 @@ function ReservationDetail({
 
   return (
     <>
-      <DialogTitle>
-        {data ? data.reference : 'Reservation'}
-        {data && (
-          <Chip
-            size="small"
-            label={data.status}
-            color={STATUS_COLOR[data.status]}
-            sx={{ ml: 1 }}
-          />
-        )}
-      </DialogTitle>
+      <DialogHeader
+        title={data ? data.fullName : 'Reservation'}
+        subtitle={data?.reference}
+        onClose={onClose}
+      />
       <DialogContent dividers>
         {loadError && <Typography color="error">{loadError}</Typography>}
         {data && (
           <Stack spacing={2}>
-            <Box>
-              <Typography variant="subtitle2">{data.fullName}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {data.phone}
-                {data.email ? ` · ${data.email}` : ''}
-              </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr' },
+                gap: 1.25,
+              }}
+            >
+              <DetailField icon={PhoneRoundedIcon} label="Phone" value={data.phone} />
+              <DetailField icon={EmailRoundedIcon} label="Email" value={data.email ?? '—'} />
+              <DetailField icon={EventRoundedIcon} label="Date" value={fmtDate(data.date)} />
+              <DetailField icon={AccessTimeRoundedIcon} label="Time" value={data.time} />
+              <DetailField icon={GroupsRoundedIcon} label="Guests" value={data.guests} />
+              <DetailField
+                icon={FlagRoundedIcon}
+                label="Status"
+                value={<Chip size="small" label={data.status} color={STATUS_COLOR[data.status]} />}
+              />
+              {data.note && (
+                <DetailField label="Guest note" value={data.note} span />
+              )}
             </Box>
-            <Stack direction="row" spacing={3}>
-              <Field label="Date">{fmtDate(data.date)}</Field>
-              <Field label="Time">{data.time}</Field>
-              <Field label="Guests">{data.guests}</Field>
-            </Stack>
-            {data.note && <Field label="Guest note">{data.note}</Field>}
 
             <Divider />
-            <Box>
-              <Typography variant="overline" color="text.secondary">
-                History
-              </Typography>
-              <Stack spacing={1} sx={{ mt: 0.5 }}>
-                {data.history.map((h) => (
-                  <Box key={h.id}>
-                    <Typography variant="body2">
-                      {h.fromStatus ? `${h.fromStatus} → ` : ''}
-                      <strong>{h.toStatus}</strong>
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {fmtDateTime(h.createdAt)}
-                      {h.note ? ` — ${h.note}` : ''}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Box>
+            <FormSection title="History">
+              <HistoryTimeline
+                entries={data.history}
+                statusColor={(s) => STATUS_COLOR[s as ReservationStatus]}
+                formatWhen={fmtDateTime}
+              />
+            </FormSection>
 
             {canUpdate && NEXT_ACTIONS[data.status].length > 0 && (
               <>
@@ -452,22 +408,5 @@ function ReservationDetail({
           ))}
       </DialogActions>
     </>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-        {label}
-      </Typography>
-      <Typography variant="body2">{children}</Typography>
-    </Box>
   );
 }

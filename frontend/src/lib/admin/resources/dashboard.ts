@@ -9,13 +9,17 @@ export type DashboardSummary = {
     today: number;
     last7Days: number;
     last30Days: number;
+    previous7Days: number;
+    oldestPendingHours: number | null;
   };
   enquiries: {
     byStatus: StatusCounts;
     open: number;
     upcoming: number;
+    upcomingWithin7Days: number;
     last7Days: number;
     last30Days: number;
+    previous7Days: number;
   };
   reviews: {
     byStatus: StatusCounts;
@@ -25,6 +29,8 @@ export type DashboardSummary = {
     averageRating: number | null;
     last7Days: number;
     last30Days: number;
+    previous7Days: number;
+    latestPending: { rating: number; name: string } | null;
   };
   content: {
     menuItems: { total: number; published: number };
@@ -41,9 +47,24 @@ export type DashboardSummary = {
       entityType: string;
       entityId: string | null;
       actorEmail: string | null;
+      before: unknown;
+      after: unknown;
       createdAt: string;
+      actor: { name: string } | null;
     }>;
+    feed: ActivityFeedItem[];
   };
+};
+
+export type ActivityFeedItem = {
+  id: string;
+  kind: 'reservation' | 'enquiry' | 'review' | 'menu' | 'gallery';
+  title: string;
+  context: string | null;
+  actorName: string | null;
+  createdAt: string;
+  actionLabel: string;
+  actionHref: string;
 };
 
 export const DASHBOARD_PATH = '/admin/dashboard';

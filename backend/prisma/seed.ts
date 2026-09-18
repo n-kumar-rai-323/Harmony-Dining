@@ -45,10 +45,14 @@ const PERMISSIONS: Record<string, string> = {
   'reservations.update': 'Change reservation status',
   'enquiries.read': 'View private event enquiries',
   'enquiries.update': 'Change enquiry status',
+  'messages.read': 'View contact form messages',
+  'messages.manage': 'Mark contact messages read and delete them',
   'reviews.read': 'View reviews',
   'reviews.moderate': 'Approve, reject, feature and publish reviews',
   'homepage.read': 'View homepage CMS content',
   'homepage.manage': 'Edit homepage CMS content',
+  'pageHeaders.read': 'View page header (hero/banner) CMS content',
+  'pageHeaders.manage': 'Edit page header (hero/banner) CMS content',
   'settings.read': 'View site settings',
   'settings.manage': 'Edit site settings',
   'notifications.read': 'View notifications',
@@ -81,6 +85,8 @@ const ROLE_GRANTS: Record<AdminRole, string[]> = {
     'reservations.update',
     'enquiries.read',
     'enquiries.update',
+    'messages.read',
+    'messages.manage',
     'reviews.read',
     'reviews.moderate',
     'notifications.read',
@@ -93,6 +99,7 @@ const ROLE_GRANTS: Record<AdminRole, string[]> = {
     'reservations.read',
     'reservations.update',
     'enquiries.read',
+    'messages.read',
     'reviews.read',
     'notifications.read',
   ],
@@ -534,97 +541,84 @@ async function seedHomepage(): Promise<void> {
   }
 }
 
-interface SeedMenuItem {
-  name: string;
-  price?: number | null;
-  priceLabel?: string;
-  description?: string;
-  status: string;
-  variants?: { name: string; price: number }[];
-}
-interface SeedMenuCategory {
-  id: string;
-  group: 'FOOD' | 'BEVERAGES' | 'BAR';
-  name: string;
-  items: SeedMenuItem[];
-}
+// Seeds the current hardcoded hero copy for every public page so the pages
+// render identically before an admin edits anything, and so there's a
+// starting point to edit from in the admin panel.
+async function seedPageHeaders(): Promise<void> {
+  const headers: Record<string, unknown> = {
+    about: {
+      eyebrow: 'Our Story',
+      title: 'Made for gathering.',
+      description:
+        'Harmony Dining & Event Center began with a simple idea: a single place where good food, warm service and space to celebrate come together.',
+      image: '/images/home/harmony-dining-experience.jpg',
+      imageAlt: 'The dining room at Harmony Dining & Event Center',
+    },
+    contact: {
+      eyebrow: 'Contact',
+      title: 'We would love to hear from you.',
+      description:
+        'The quickest way to book is through our reservation and event forms — they reach the team directly. You can also visit us in person or message us on social media.',
+    },
+    events: {
+      eyebrow: 'Events at Harmony',
+      title: 'Celebrate beautifully.',
+      accentTitle: 'Host effortlessly.',
+      description:
+        'From intimate dinners to bigger celebrations, Harmony brings together beautiful spaces, dining and event support for moments worth remembering.',
+      image: '/images/home/harmony-experience-event.jpg',
+      imageAlt: 'Celebration event at Harmony Dining and Event Center',
+      primaryCta: { label: 'Plan Your Event', href: '#enquiry' },
+      secondaryCta: { label: 'View Past Events', href: '#past-events' },
+    },
+    gallery: {
+      eyebrow: 'Our Gallery',
+      title: 'Moments at Harmony.',
+      description:
+        'Discover Harmony through our dining spaces, celebrations and memorable moments shared with our guests.',
+      image: '/images/home/harmony-gallery-dining-hall.jpg',
+      imageAlt: 'Harmony dining and celebration gallery',
+      primaryCta: { label: 'View Our Events', href: '/events' },
+      secondaryCta: { label: 'View Photos', href: '#gallery' },
+    },
+    menu: {
+      eyebrow: 'Exquisite Flavors',
+      title: 'A Menu for',
+      accentTitle: 'Every Moment',
+      description:
+        'Fresh ingredients. Thoughtful preparation. Memorable flavours for dining, celebrations and every Harmony moment.',
+      image: '/images/menu/harmony-food-menu-bg.jpg',
+      imageAlt: 'Harmony dining menu',
+      badges: [
+        { label: 'Fresh & Local' },
+        { label: 'Chef Crafted' },
+        { label: 'Quality First' },
+      ],
+    },
+    reservation: {
+      eyebrow: 'Reserve a Table',
+      title: 'Good food brings people together.',
+      description:
+        'Choose your preferred date, time and table size. Harmony will review availability and confirm the reservation with you.',
+      image: '/images/home/harmony-hero-dining.jpg',
+      imageAlt: 'Dining experience at Harmony Dining and Event Center',
+      primaryCta: { label: 'Reserve Your Table', href: '#reservation-form' },
+    },
+    reviews: {
+      eyebrow: 'Guest Stories',
+      title: 'Moments that',
+      accentTitle: 'stay with you.',
+      description: "Every table has a story. Here's what guests are saying.",
+    },
+  };
 
-// Imports the real menu (extracted from the site's menu-data.ts) — but only
-// on an empty database, so it never overwrites edits made in the admin panel.
-async function seedMenu(): Promise<void> {
-  const existing = await prisma.menuCategory.count();
-  if (existing > 0) {
-    console.log(`  · menu: ${existing} categories already present — skipped.`);
-    return;
-  }
-
-  let raw: SeedMenuCategory[];
-  try {
-    raw = JSON.parse(
-      readFileSync(join(__dirname, 'seed-data', 'menu.json'), 'utf8'),
-    );
-  } catch {
-    console.warn('  · menu: seed-data/menu.json not found — skipped.');
-    return;
-  }
-
-  const mapStatus = (s: string) =>
-    s === 'VERIFIED' ? 'PUBLISHED' : ('DRAFT' as const);
-
-  let catCount = 0;
-  let itemCount = 0;
-
-  for (const [ci, cat] of raw.entries()) {
-    const catSlug = slugify(cat.id || cat.name) || `category-${ci + 1}`;
-    const category = await prisma.menuCategory.create({
-      data: {
-        name: cat.name,
-        slug: catSlug,
-        group: cat.group,
-        status: 'PUBLISHED',
-        sortOrder: ci,
-      },
+  for (const [key, content] of Object.entries(headers)) {
+    await prisma.pageHeader.upsert({
+      where: { key },
+      update: {},
+      create: { key, content: content as never, isPublished: true },
     });
-    catCount += 1;
-
-    const usedSlugs = new Set<string>();
-    for (const [ii, item] of cat.items.entries()) {
-      let slug = slugify(item.name) || `item-${ii + 1}`;
-      let n = 1;
-      while (usedSlugs.has(slug)) {
-        n += 1;
-        slug = `${slugify(item.name)}-${n}`;
-      }
-      usedSlugs.add(slug);
-
-      await prisma.menuItem.create({
-        data: {
-          categoryId: category.id,
-          name: item.name,
-          slug,
-          description: item.description?.trim() || null,
-          price: item.price ?? null,
-          priceLabel: item.priceLabel?.trim() || null,
-          status: mapStatus(item.status),
-          sortOrder: ii,
-          variants: item.variants?.length
-            ? {
-                create: item.variants.map((v, vi) => ({
-                  label: v.name,
-                  price: v.price,
-                  sortOrder: vi,
-                })),
-              }
-            : undefined,
-        },
-      });
-      itemCount += 1;
-    }
   }
-
-  console.log(
-    `  · menu: imported ${catCount} categories, ${itemCount} items.`,
-  );
 }
 
 interface SeedGalleryItem {
@@ -846,7 +840,7 @@ async function main(): Promise<void> {
   await seedSuperAdmin();
   await seedSingletons();
   await seedHomepage();
-  await seedMenu();
+  await seedPageHeaders();
   await seedGallery();
   await seedEvents();
   console.log('Seed complete.');

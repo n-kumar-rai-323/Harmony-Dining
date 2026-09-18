@@ -333,7 +333,29 @@ export class ReservationsService {
       include: { history: { orderBy: { createdAt: 'asc' } } },
     });
     if (!reservation) throw new NotFoundException('Reservation not found');
-    return reservation;
+
+    const actorIds = [
+      ...new Set(
+        reservation.history
+          .map((h) => h.changedById)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const actors = actorIds.length
+      ? await this.prisma.adminUser.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const nameById = new Map(actors.map((a) => [a.id, a.name]));
+
+    return {
+      ...reservation,
+      history: reservation.history.map((h) => ({
+        ...h,
+        changedByName: h.changedById ? (nameById.get(h.changedById) ?? null) : null,
+      })),
+    };
   }
 
   async transition(

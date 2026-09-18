@@ -15,12 +15,13 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
 import PhotoLibraryRoundedIcon from '@mui/icons-material/PhotoLibraryRounded';
-import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
-import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 
 import EventEnquiryForm from '@/components/events/event-enquiry-form';
+import PastEventsGrid from '@/components/events/past-events-grid';
+import UpcomingEventsList from '@/components/events/upcoming-events-list';
 
-import { getPastEventsList } from '@/lib/api/events';
+import { getPastEventsList, getUpcomingEventsList } from '@/lib/api/events';
+import { getPageHeaders } from '@/lib/api/page-headers';
 import {
   getEventCategoryCards,
   getEventEnquirySteps,
@@ -28,8 +29,6 @@ import {
 } from '@/data/marketing';
 
 import FeatureIcon from '@/components/common/feature-icon';
-
-import { formatLongDate } from '@/lib/date';
 
 export const metadata: Metadata = {
   title: 'Events',
@@ -44,7 +43,11 @@ const harmonyBenefits = getHarmonyEventBenefits();
 const enquirySteps = getEventEnquirySteps();
 
 export default async function EventsPage() {
-  const pastEvents = await getPastEventsList();
+  const [pastEvents, upcomingEvents, { events: hero }] = await Promise.all([
+    getPastEventsList(),
+    getUpcomingEventsList(),
+    getPageHeaders(),
+  ]);
 
   return (
     <Box
@@ -93,8 +96,8 @@ export default async function EventsPage() {
             }}
           >
             <Image
-              src="/images/home/harmony-experience-event.jpg"
-              alt="Celebration event at Harmony Dining and Event Center"
+              src={hero?.image ?? '/images/home/harmony-experience-event.jpg'}
+              alt={hero?.imageAlt ?? 'Celebration event at Harmony Dining and Event Center'}
               fill
               priority
               quality={80}
@@ -156,7 +159,7 @@ export default async function EventsPage() {
                     color: 'secondary.light',
                   }}
                 >
-                  Events at Harmony
+                  {hero?.eyebrow ?? 'Events at Harmony'}
                 </Typography>
 
                 <Typography
@@ -168,7 +171,7 @@ export default async function EventsPage() {
                     color: 'primary.contrastText',
                   }}
                 >
-                  Celebrate beautifully.
+                  {hero?.title ?? 'Celebrate beautifully.'}
                 </Typography>
 
                 <Typography
@@ -179,7 +182,7 @@ export default async function EventsPage() {
                     color: 'secondary.light',
                   }}
                 >
-                  Host effortlessly.
+                  {hero?.accentTitle ?? 'Host effortlessly.'}
                 </Typography>
 
                 <Typography
@@ -191,10 +194,8 @@ export default async function EventsPage() {
                     opacity: 0.82,
                   }}
                 >
-                  From intimate dinners to bigger
-                  celebrations, Harmony brings together
-                  beautiful spaces, dining and event
-                  support for moments worth remembering.
+                  {hero?.description ??
+                    'From intimate dinners to bigger celebrations, Harmony brings together beautiful spaces, dining and event support for moments worth remembering.'}
                 </Typography>
 
                 <Stack
@@ -212,7 +213,7 @@ export default async function EventsPage() {
                   }}
                 >
                   <Link
-                    href="#enquiry"
+                    href={hero?.primaryCta?.href ?? '#enquiry'}
                     style={{
                       textDecoration: 'none',
                     }}
@@ -235,12 +236,12 @@ export default async function EventsPage() {
                         },
                       }}
                     >
-                      Plan Your Event
+                      {hero?.primaryCta?.label ?? 'Plan Your Event'}
                     </Button>
                   </Link>
 
                   <Link
-                    href="#past-events"
+                    href={hero?.secondaryCta?.href ?? '#past-events'}
                     style={{
                       textDecoration: 'none',
                     }}
@@ -274,7 +275,7 @@ export default async function EventsPage() {
                         },
                       }}
                     >
-                      View Past Events
+                      {hero?.secondaryCta?.label ?? 'View Past Events'}
                     </Button>
                   </Link>
                 </Stack>
@@ -444,6 +445,21 @@ export default async function EventsPage() {
       </Box>
 
       {/* =====================================================
+          UPCOMING EVENTS
+      ===================================================== */}
+
+      <Box
+        component="section"
+        id="upcoming-events"
+        sx={{
+          scrollMarginTop: 100,
+          py: { xs: 7, md: 9 },
+        }}
+      >
+        <UpcomingEventsList events={upcomingEvents} />
+      </Box>
+
+      {/* =====================================================
           PAST EVENTS
       ===================================================== */}
 
@@ -465,336 +481,9 @@ export default async function EventsPage() {
           borderColor: 'divider',
         }}
       >
+        <PastEventsGrid events={pastEvents} />
+
         <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: 'grid',
-
-              gridTemplateColumns: {
-                xs: '1fr',
-
-                md:
-                  'minmax(0,1fr) auto',
-              },
-
-              gap: 2,
-
-              alignItems: 'end',
-            }}
-          >
-            <Box
-              sx={{
-                maxWidth: 700,
-              }}
-            >
-              <Typography
-                variant="overline"
-                sx={{
-                  color: 'secondary.dark',
-                }}
-              >
-                Past Events
-              </Typography>
-
-              <Typography
-                component="h2"
-                variant="h2"
-                sx={{
-                  mt: 0.7,
-                }}
-              >
-                Moments we’ve had the pleasure to host.
-              </Typography>
-
-              <Typography
-                variant="body1"
-                sx={{
-                  mt: 1.4,
-                  maxWidth: 620,
-                  color: 'text.secondary',
-                }}
-              >
-                Explore real Harmony spaces and
-                celebration-style setups for inspiration
-                before planning your own event.
-              </Typography>
-            </Box>
-
-            <Link
-              href="/gallery"
-              style={{
-                textDecoration: 'none',
-              }}
-            >
-              <Button
-                variant="text"
-                endIcon={
-                  <ArrowForwardRoundedIcon />
-                }
-              >
-                View More Photos
-              </Button>
-            </Link>
-          </Box>
-
-          <Box
-            sx={{
-              mt: 4,
-
-              display: 'grid',
-
-              gridTemplateColumns: {
-                xs: '1fr',
-
-                md:
-                  'repeat(3, minmax(0,1fr))',
-              },
-
-              gap: 2,
-            }}
-          >
-            {pastEvents.map((event) => {
-              const isVideoCover =
-                event.cover.type === 'video';
-
-              const coverSrc =
-                event.cover.type === 'image'
-                  ? event.cover.src
-                  : event.cover.poster;
-
-              return (
-                <Link
-                  key={event.slug}
-                  href={`/events/past/${event.slug}`}
-                  style={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    display: 'block',
-                  }}
-                >
-                  <Box
-                    component="article"
-                    sx={{
-                      overflow: 'hidden',
-
-                      bgcolor:
-                        'background.default',
-
-                      border: '1px solid',
-                      borderColor: 'divider',
-
-                      borderRadius: 2,
-
-                      transition:
-                        'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
-
-                      '&:hover': {
-                        transform:
-                          'translateY(-3px)',
-
-                        boxShadow: 4,
-
-                        borderColor:
-                          'secondary.main',
-                      },
-
-                      '@media (prefers-reduced-motion: reduce)':
-                        {
-                          transition: 'none',
-
-                          '&:hover': {
-                            transform: 'none',
-                          },
-                        },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: 'relative',
-
-                        aspectRatio: {
-                          xs: '16 / 11',
-                          md: '4 / 3',
-                        },
-
-                        bgcolor: 'action.hover',
-
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <Image
-                        src={coverSrc}
-                        alt={event.cover.alt}
-                        fill
-                        loading="lazy"
-                        quality={80}
-                        sizes="(max-width: 900px) 100vw, 33vw"
-                        style={{
-                          objectFit: 'cover',
-                        }}
-                      />
-
-                      <Box
-                        aria-hidden
-                        sx={{
-                          position: 'absolute',
-                          inset: 0,
-
-                          bgcolor: 'primary.dark',
-
-                          opacity: isVideoCover
-                            ? 0.26
-                            : 0.1,
-                        }}
-                      />
-
-                      {isVideoCover ? (
-                        <Box
-                          aria-hidden
-                          sx={{
-                            position: 'absolute',
-                            inset: 0,
-                            display: 'grid',
-                            placeItems: 'center',
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 52,
-                              height: 52,
-                              display: 'grid',
-                              placeItems: 'center',
-                              borderRadius: '50%',
-                              color:
-                                'primary.contrastText',
-                              bgcolor:
-                                'rgba(6, 42, 31, 0.82)',
-                              border:
-                                '1px solid rgba(216, 188, 130, 0.32)',
-                              backdropFilter:
-                                'blur(8px)',
-                              WebkitBackdropFilter:
-                                'blur(8px)',
-                            }}
-                          >
-                            <PlayArrowRoundedIcon />
-                          </Box>
-                        </Box>
-                      ) : null}
-                    </Box>
-
-                    <Box
-                      sx={{
-                        p: 2.2,
-                      }}
-                    >
-                      <Typography
-                        variant="overline"
-                        sx={{
-                          color: 'secondary.dark',
-                        }}
-                      >
-                        {event.category}
-                      </Typography>
-
-                      <Typography
-                        component="h3"
-                        variant="h5"
-                        sx={{
-                          mt: 0.25,
-                        }}
-                      >
-                        {event.title}
-                      </Typography>
-
-                      <Stack
-                        direction="row"
-                        sx={{
-                          mt: 1,
-
-                          flexWrap: 'wrap',
-
-                          alignItems: 'center',
-
-                          gap: 1.4,
-
-                          color: 'text.secondary',
-                        }}
-                      >
-                        <Stack
-                          direction="row"
-                          sx={{
-                            alignItems: 'center',
-                            gap: 0.7,
-                          }}
-                        >
-                          <CalendarMonthRoundedIcon
-                            aria-hidden
-                            sx={{ fontSize: 18 }}
-                          />
-
-                          <Typography variant="caption">
-                            {formatLongDate(
-                              event.date,
-                            )}
-                          </Typography>
-                        </Stack>
-
-                        {event.guests ? (
-                          <Stack
-                            direction="row"
-                            sx={{
-                              alignItems:
-                                'center',
-                              gap: 0.7,
-                            }}
-                          >
-                            <PeopleAltRoundedIcon
-                              aria-hidden
-                              sx={{
-                                fontSize: 18,
-                              }}
-                            />
-
-                            <Typography variant="caption">
-                              {event.guests}
-                            </Typography>
-                          </Stack>
-                        ) : null}
-                      </Stack>
-
-                      <Stack
-                        direction="row"
-                        sx={{
-                          mt: 1.4,
-
-                          alignItems: 'center',
-
-                          gap: 0.5,
-
-                          color: 'secondary.dark',
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{ fontWeight: 800 }}
-                        >
-                          {isVideoCover
-                            ? 'Watch highlights'
-                            : 'View photos'}
-                        </Typography>
-
-                        <ArrowForwardRoundedIcon
-                          sx={{ fontSize: 16 }}
-                        />
-                      </Stack>
-                    </Box>
-                  </Box>
-                </Link>
-              );
-            })}
-          </Box>
-
           <Box
             sx={{
               mt: 3,

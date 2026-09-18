@@ -12,9 +12,17 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { MenuGroup, PublishStatus } from '@prisma/client';
+import { Transform, Type } from 'class-transformer';
+import { DietaryType, MenuGroup, PublishStatus } from '@prisma/client';
 import { PaginationQuery } from '../common/pagination';
+
+// Query-string booleans: "true"/"1" -> true, "false"/"0" -> false, else undefined.
+const boolParam = ({ value }: { value: unknown }) => {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true' || value === '1') return true;
+  if (value === 'false' || value === '0') return false;
+  return undefined;
+};
 
 // ---------- Categories ----------
 
@@ -101,14 +109,17 @@ export class CreateItemDto {
   @Min(0)
   price?: number | null;
 
-  @IsOptional()
   @IsString()
-  @MaxLength(60)
-  priceLabel?: string | null;
+  @MinLength(1)
+  mediaId!: string;
 
   @IsOptional()
-  @IsString()
-  mediaId?: string | null;
+  @IsEnum(DietaryType)
+  dietary?: DietaryType;
+
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
 
   @IsOptional()
   @IsBoolean()
@@ -123,7 +134,15 @@ export class CreateItemDto {
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(40, { each: true })
   tags?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  ingredients?: string[];
 
   @IsOptional()
   @IsArray()
@@ -156,12 +175,16 @@ export class UpdateItemDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(60)
-  priceLabel?: string | null;
+  @MinLength(1)
+  mediaId?: string;
 
   @IsOptional()
-  @IsString()
-  mediaId?: string | null;
+  @IsEnum(DietaryType)
+  dietary?: DietaryType;
+
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
 
   @IsOptional()
   @IsBoolean()
@@ -176,7 +199,15 @@ export class UpdateItemDto {
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MaxLength(40, { each: true })
   tags?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  ingredients?: string[];
 
   @IsOptional()
   @IsArray()
@@ -215,6 +246,11 @@ export class ItemQueryDto extends PaginationQuery {
   @IsOptional()
   @IsEnum(PublishStatus)
   status?: PublishStatus;
+
+  @IsOptional()
+  @Transform(boolParam)
+  @IsBoolean()
+  isAvailable?: boolean;
 
   @IsOptional()
   @IsString()

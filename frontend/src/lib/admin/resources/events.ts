@@ -7,6 +7,17 @@ export type PublishStatus = 'DRAFT' | 'PUBLISHED';
 export type EventLifecycle = 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
 export const LIFECYCLES: EventLifecycle[] = ['UPCOMING', 'COMPLETED', 'CANCELLED'];
 
+/** Suggested categories — the field stays free text, this just seeds the picker. */
+export const EVENT_CATEGORIES = [
+  'Birthday',
+  'Anniversary',
+  'Wedding',
+  'Corporate',
+  'Private Dining',
+  'Party',
+  'Celebration',
+];
+
 export type EventMediaRow = {
   id: string;
   mediaId: string;

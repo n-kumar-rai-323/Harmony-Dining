@@ -31,6 +31,7 @@ export type ReservationHistoryEntry = {
   fromStatus: ReservationStatus | null;
   toStatus: ReservationStatus;
   changedById: string | null;
+  changedByName: string | null;
   note: string | null;
   createdAt: string;
 };

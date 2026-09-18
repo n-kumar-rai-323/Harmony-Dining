@@ -95,19 +95,14 @@ const PAST_EVENTS: PastEvent[] = [
     summary:
       'A private anniversary dinner in the banquet hall, captured in photos and a short highlight video.',
     cover: {
-      type: 'video',
-      // Placeholder path — replace with the uploaded highlight reel.
-      src: '/media/past-events/anniversary-evening/highlight.mp4',
-      poster: '/images/home/harmony-banquet-hall.jpg',
-      alt: 'Anniversary evening highlight video',
+      type: 'image',
+      src: '/images/home/harmony-banquet-hall.jpg',
+      alt: 'Banquet hall arranged for the anniversary dinner',
     },
+    // No highlight reel has been uploaded for this event yet — shown as
+    // photos only. Add a `video` entry here (with a real file under
+    // public/media/past-events/anniversary-evening/) once one exists.
     media: [
-      {
-        type: 'video',
-        src: '/media/past-events/anniversary-evening/highlight.mp4',
-        poster: '/images/home/harmony-banquet-hall.jpg',
-        alt: 'Anniversary evening highlight video',
-      },
       {
         type: 'image',
         src: '/images/home/harmony-banquet-hall.jpg',

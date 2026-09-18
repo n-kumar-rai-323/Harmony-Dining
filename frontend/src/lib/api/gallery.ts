@@ -32,16 +32,23 @@ function toLocal(item: ApiGalleryItem): GalleryItem {
   };
 }
 
-/** All published gallery items for the /gallery page. Falls back to local data. */
+/**
+ * All published gallery items for the /gallery page.
+ *
+ * Falls back to local data only when the API itself is unreachable
+ * (`apiGet` returns `null`) — a real, successful empty result (e.g. every
+ * photo unpublished) is returned as-is so the page shows its real "no
+ * photos" state instead of silently substituting stale placeholder images.
+ */
 export async function getGalleryItems(): Promise<GalleryItem[]> {
   const data = await apiGet<ApiGalleryItem[]>('/public/gallery', {
     revalidate: 300,
   });
-  if (!data || data.length === 0) return localGalleryItems();
+  if (!data) return localGalleryItems();
   return data.map(toLocal);
 }
 
-/** Home-page gallery preview items. Falls back to local data. */
+/** Home-page gallery preview items. Falls back to local data only if the API is unreachable. */
 export async function getHomeGalleryItems(
   limit = 6,
 ): Promise<GalleryItem[]> {
@@ -49,6 +56,6 @@ export async function getHomeGalleryItems(
     `/public/gallery/home?limit=${limit}`,
     { revalidate: 300 },
   );
-  if (!data || data.length === 0) return localHomeGalleryItems(limit);
+  if (!data) return localHomeGalleryItems(limit);
   return data.map(toLocal);
 }

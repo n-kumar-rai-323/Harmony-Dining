@@ -1,6 +1,9 @@
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -50,6 +53,13 @@ export class CreateReviewDto {
   @IsString()
   @MaxLength(80)
   role?: string;
+
+  /** Media ids from POST /public/reviews/photos, up to 3. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  mediaIds?: string[];
 }
 
 /** Admin-entered review (e.g. copied from Google/Facebook). */
@@ -86,10 +96,34 @@ export class ReviewQueryDto extends PaginationQuery {
   search?: string;
 }
 
+export const PUBLIC_REVIEW_SORTS = ['recent', 'highest', 'lowest'] as const;
+export type PublicReviewSort = (typeof PUBLIC_REVIEW_SORTS)[number];
+
+/** Filters for the public /reviews page list. */
+export class PublicReviewQueryDto extends PaginationQuery {
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(80)
+  role?: string;
+
+  @IsOptional()
+  @IsIn(PUBLIC_REVIEW_SORTS)
+  sort?: PublicReviewSort;
+}
+
 export class ModerateNoteDto {
   @IsOptional()
   @Transform(trim)
   @IsString()
   @MaxLength(500)
   note?: string;
+}
+
+/** Admin's public reply to a review. An empty/blank reply clears it. */
+export class ReplyToReviewDto {
+  @Transform(trim)
+  @IsString()
+  @MaxLength(1000)
+  reply!: string;
 }

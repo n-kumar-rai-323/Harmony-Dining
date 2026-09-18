@@ -1,30 +1,34 @@
 'use client';
 
 import { useState } from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardActions,
   CardContent,
   CardMedia,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   FormControlLabel,
   IconButton,
-  Menu,
   MenuItem,
   Stack,
   Switch,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import PhotoLibraryRoundedIcon from '@mui/icons-material/PhotoLibraryRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
 
 import { ConfirmDialog, DialogHeader, FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
@@ -32,14 +36,33 @@ import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import { useAdminAuth } from '@/lib/admin/auth-context';
 import { AdminApiError } from '@/lib/admin/api';
+import { galleryItemSchema, type GalleryItemFormValues } from '@/validation/gallery-item.schema';
 import {
   galleryApi,
   GALLERY_PATH,
   GALLERY_CATEGORIES,
   type GalleryItem,
-  type GalleryCategory,
 } from '@/lib/admin/resources/gallery';
 import { uploadMedia, ACCEPTED_IMAGE_TYPES } from '@/lib/admin/resources/media';
+
+function categoryLabel(c: string): string {
+  return c.charAt(0) + c.slice(1).toLowerCase();
+}
+
+/**
+ * Without this, React Hook Form silently updates formState.errors on a
+ * failed client-side validation and Save does nothing visible at all.
+ */
+function flattenFormErrors(errors: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const val of Object.values(errors)) {
+    if (!val || typeof val !== 'object') continue;
+    const message = (val as { message?: unknown }).message;
+    if (typeof message === 'string') out.push(message);
+    else out.push(...flattenFormErrors(val as Record<string, unknown>));
+  }
+  return out;
+}
 
 export default function AdminGalleryPage() {
   const { hasPermission } = useAdminAuth();
@@ -49,13 +72,14 @@ export default function AdminGalleryPage() {
   const { data, loading, error, reload, params, setParam } =
     useAdminList<GalleryItem>(GALLERY_PATH, { pageSize: 24 });
 
-  const [menu, setMenu] = useState<{ anchor: HTMLElement; row: GalleryItem } | null>(null);
   const [dialog, setDialog] = useState<GalleryItem | 'new' | null>(null);
   const [confirmDel, setConfirmDel] = useState<GalleryItem | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function act(fn: () => Promise<unknown>, ok: string) {
-    setBusy(true);
+  async function act(fn: () => Promise<unknown>, ok: string, id?: string) {
+    if (id) setBusyId(id);
+    else setBusy(true);
     try {
       await fn();
       toast.success(ok);
@@ -63,44 +87,47 @@ export default function AdminGalleryPage() {
     } catch (err) {
       toast.error(err instanceof AdminApiError ? err.messages[0] : 'Action failed');
     } finally {
+      setBusyId(null);
       setBusy(false);
-      setMenu(null);
       setConfirmDel(null);
     }
   }
+
+  const items = data?.items ?? [];
+  const featuredCount = items.filter((it) => it.featuredOnHome).length;
 
   return (
     <Box>
       <PageHeader
         title="Gallery"
-        subtitle="Photos shown on the public gallery and home page."
+        subtitle="Photos used on the gallery page and homepage previews."
         action={
           canManage && (
             <Button
               variant="contained"
-              startIcon={<AddRoundedIcon />}
+              startIcon={<UploadRoundedIcon />}
               onClick={() => setDialog('new')}
             >
-              Add photo
+              Upload photo
             </Button>
           )
         }
       />
 
+      <ToggleButtonGroup
+        value={(params.category as string) ?? ''}
+        exclusive
+        onChange={(_, v) => v !== null && setParam('category', v || undefined)}
+        size="small"
+        sx={{ mb: 2, flexWrap: 'wrap' }}
+      >
+        <ToggleButton value="">All</ToggleButton>
+        {GALLERY_CATEGORIES.map((c) => (
+          <ToggleButton key={c} value={c}>{categoryLabel(c)}</ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+
       <FilterBar>
-        <TextField
-          select
-          size="small"
-          label="Category"
-          value={(params.category as string) ?? ''}
-          onChange={(e) => setParam('category', e.target.value || undefined)}
-          sx={{ minWidth: 150 }}
-        >
-          <MenuItem value="">All</MenuItem>
-          {GALLERY_CATEGORIES.map((c) => (
-            <MenuItem key={c} value={c}>{c}</MenuItem>
-          ))}
-        </TextField>
         <TextField
           select
           size="small"
@@ -116,6 +143,19 @@ export default function AdminGalleryPage() {
       </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
+        {data && items.length > 0 && (
+          <Alert
+            severity={featuredCount === 0 ? 'warning' : featuredCount < 3 ? 'info' : 'success'}
+            sx={{ mb: 2 }}
+          >
+            {featuredCount === 0
+              ? 'No photos featured — the homepage gallery section will stay hidden until at least one is featured.'
+              : featuredCount < 3
+                ? `${featuredCount} of ${data.total} photos featured on homepage — add at least 3 for the full mosaic layout.`
+                : `${featuredCount} of ${data.total} photos featured on homepage`}
+          </Alert>
+        )}
+
         <Box
           sx={{
             display: 'grid',
@@ -127,38 +167,70 @@ export default function AdminGalleryPage() {
             },
           }}
         >
-          {(data?.items ?? []).map((it) => (
-            <Card key={it.id} variant="outlined">
-              <CardMedia
-                component="img"
-                image={it.media.url}
-                alt={it.altText}
-                sx={{ aspectRatio: '4 / 3', objectFit: 'cover', bgcolor: 'action.hover' }}
-              />
-              <CardContent sx={{ pb: 0.5 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
-                  {it.title}
-                </Typography>
-                <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
-                  <Chip size="small" label={it.category} variant="outlined" />
+          {items.map((it) => (
+            <Card
+              key={it.id}
+              variant="outlined"
+              sx={{
+                borderColor: it.featuredOnHome ? 'primary.main' : 'divider',
+                borderWidth: it.featuredOnHome ? 2 : 1,
+              }}
+            >
+              <Box
+                sx={{ position: 'relative', cursor: canManage ? 'pointer' : 'default' }}
+                onClick={() => canManage && setDialog(it)}
+              >
+                {it.featuredOnHome && (
                   <Chip
                     size="small"
-                    label={it.status}
-                    color={it.status === 'PUBLISHED' ? 'success' : 'default'}
+                    label="Homepage"
+                    color="primary"
+                    sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1 }}
                   />
-                  {it.featuredOnHome && (
-                    <Chip size="small" label="Home" color="primary" variant="outlined" />
-                  )}
-                </Stack>
-              </CardContent>
-              <CardActions sx={{ justifyContent: 'flex-end' }}>
+                )}
+                <CardMedia
+                  component="img"
+                  image={it.media.url}
+                  alt={it.altText}
+                  sx={{ aspectRatio: '4 / 3', objectFit: 'cover', bgcolor: 'action.hover' }}
+                />
+                <CardContent sx={{ pb: 0.5 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                    {it.title}
+                  </Typography>
+                </CardContent>
+              </Box>
+              <CardActions sx={{ justifyContent: 'space-between', pl: 2 }}>
+                <FormControlLabel
+                  onClick={(e) => e.stopPropagation()}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={it.featuredOnHome}
+                      disabled={!canManage || busyId === it.id}
+                      onChange={(e) =>
+                        act(
+                          () => galleryApi.update(it.id, { featuredOnHome: e.target.checked }),
+                          e.target.checked ? 'Added to homepage' : 'Removed from homepage',
+                          it.id,
+                        )
+                      }
+                    />
+                  }
+                  label="Featured"
+                  slotProps={{ typography: { variant: 'body2' } }}
+                />
                 {canManage && (
                   <IconButton
                     size="small"
-                    disabled={busy}
-                    onClick={(e) => setMenu({ anchor: e.currentTarget, row: it })}
+                    color="error"
+                    disabled={busyId === it.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDel(it);
+                    }}
                   >
-                    <MoreVertRoundedIcon fontSize="small" />
+                    <DeleteOutlineRoundedIcon fontSize="small" />
                   </IconButton>
                 )}
               </CardActions>
@@ -195,26 +267,6 @@ export default function AdminGalleryPage() {
         )}
       </QueryBoundary>
 
-      <Menu anchorEl={menu?.anchor ?? null} open={Boolean(menu)} onClose={() => setMenu(null)}>
-        <MenuItem onClick={() => { setDialog(menu!.row); setMenu(null); }}>Edit</MenuItem>
-        <MenuItem
-          onClick={() =>
-            act(
-              () => galleryApi.setPublished(menu!.row.id, menu!.row.status !== 'PUBLISHED'),
-              'Photo updated',
-            )
-          }
-        >
-          {menu?.row.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
-        </MenuItem>
-        <MenuItem
-          onClick={() => { setConfirmDel(menu!.row); setMenu(null); }}
-          sx={{ color: 'error.main' }}
-        >
-          Delete
-        </MenuItem>
-      </Menu>
-
       {dialog && (
         <GalleryDialog
           item={dialog === 'new' ? null : dialog}
@@ -247,16 +299,31 @@ function GalleryDialog({
   onSaved: () => void;
 }) {
   const toast = useToast();
-  const [mediaId, setMediaId] = useState(item?.mediaId ?? '');
   const [previewUrl, setPreviewUrl] = useState(item?.media.url ?? '');
-  const [title, setTitle] = useState(item?.title ?? '');
-  const [altText, setAltText] = useState(item?.altText ?? '');
-  const [caption, setCaption] = useState(item?.caption ?? '');
-  const [category, setCategory] = useState<GalleryCategory>(item?.category ?? 'DINING');
-  const [featuredOnHome, setFeaturedOnHome] = useState(item?.featuredOnHome ?? false);
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<GalleryItemFormValues>({
+    resolver: yupResolver(galleryItemSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      mediaId: item?.mediaId ?? '',
+      title: item?.title ?? '',
+      altText: item?.altText ?? '',
+      caption: item?.caption ?? '',
+      category: item?.category ?? 'DINING',
+      featuredOnHome: item?.featuredOnHome ?? false,
+      published: item?.status === 'PUBLISHED',
+    },
+  });
+
+  const title = useWatch({ control, name: 'title' });
+  const altText = useWatch({ control, name: 'altText' });
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -264,7 +331,7 @@ function GalleryDialog({
     setErrors([]);
     try {
       const media = await uploadMedia(file, { folder: 'gallery', title, altText });
-      setMediaId(media.id);
+      setValue('mediaId', media.id, { shouldValidate: true });
       setPreviewUrl(media.url);
       toast.success('Image uploaded');
     } catch (err) {
@@ -274,32 +341,33 @@ function GalleryDialog({
     }
   }
 
-  async function save() {
-    setSaving(true);
+  const onSubmit = handleSubmit(async (values) => {
     setErrors([]);
     try {
       const body = {
-        mediaId,
-        title: title.trim(),
-        altText: altText.trim(),
-        caption: caption.trim() || undefined,
-        category,
-        featuredOnHome,
+        mediaId: values.mediaId,
+        title: values.title.trim(),
+        altText: values.altText.trim(),
+        caption: values.caption?.trim() || undefined,
+        category: values.category,
+        featuredOnHome: values.featuredOnHome,
       };
-      if (item) await galleryApi.update(item.id, body);
-      else await galleryApi.create(body);
+      const saved = item ? await galleryApi.update(item.id, body) : await galleryApi.create(body);
+      if (values.published !== (item?.status === 'PUBLISHED')) {
+        await galleryApi.setPublished(saved.id, values.published);
+      }
       toast.success('Photo saved');
       onSaved();
     } catch (err) {
       if (err instanceof AdminApiError) setErrors(err.messages);
       else toast.error('Could not save');
-    } finally {
-      setSaving(false);
     }
-  }
+  }, (formErrors) => {
+    const messages = flattenFormErrors(formErrors as Record<string, unknown>);
+    setErrors(messages.length > 0 ? messages : ['Please check the highlighted fields.']);
+  });
 
-  const canSave =
-    Boolean(mediaId) && title.trim().length >= 2 && altText.trim().length >= 2;
+  const saving = isSubmitting;
 
   return (
     <Dialog open onClose={saving || uploading ? undefined : onClose} maxWidth="sm" fullWidth>
@@ -352,48 +420,86 @@ function GalleryDialog({
             </Box>
           </Box>
 
-          <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} size="small" fullWidth />
-          <TextField
-            label="Alt text (describes the image for screen readers)"
-            value={altText}
-            onChange={(e) => setAltText(e.target.value)}
-            size="small"
-            fullWidth
-          />
-          <TextField
-            label="Caption (optional)"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            size="small"
-            fullWidth
-            multiline
-            minRows={2}
-          />
-          <TextField
-            select
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value as GalleryCategory)}
-            size="small"
-          >
-            {GALLERY_CATEGORIES.map((c) => (
-              <MenuItem key={c} value={c}>{c}</MenuItem>
-            ))}
-          </TextField>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={featuredOnHome}
-                onChange={(e) => setFeaturedOnHome(e.target.checked)}
+          <Controller
+            name="title"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Title"
+                size="small"
+                fullWidth
+                error={Boolean(fieldState.error)}
+                helperText={fieldState.error?.message ?? ' '}
               />
-            }
-            label="Show on the home page showcase"
+            )}
+          />
+          <Controller
+            name="altText"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Alt text (describes the image for screen readers)"
+                size="small"
+                fullWidth
+                error={Boolean(fieldState.error)}
+                helperText={fieldState.error?.message ?? ' '}
+              />
+            )}
+          />
+          <Controller
+            name="caption"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Caption (optional)"
+                size="small"
+                fullWidth
+                multiline
+                minRows={2}
+                error={Boolean(fieldState.error)}
+                helperText={fieldState.error?.message ?? ' '}
+              />
+            )}
+          />
+          <Controller
+            name="category"
+            control={control}
+            render={({ field }) => (
+              <TextField {...field} select label="Category" size="small">
+                {GALLERY_CATEGORIES.map((c) => (
+                  <MenuItem key={c} value={c}>{categoryLabel(c)}</MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+          <Controller
+            name="featuredOnHome"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                label="Show on the home page showcase"
+              />
+            )}
+          />
+          <Controller
+            name="published"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={<Switch checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />}
+                label="Published"
+              />
+            )}
           />
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving || uploading}>Cancel</Button>
-        <Button variant="contained" onClick={save} disabled={saving || uploading || !canSave}>
+        <Button variant="contained" onClick={onSubmit} disabled={saving || uploading}>
           {saving ? 'Saving…' : 'Save photo'}
         </Button>
       </DialogActions>

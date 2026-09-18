@@ -16,6 +16,10 @@ export type AdminReview = {
   moderatedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  photos: { id: string; url: string }[];
+  reply: string | null;
+  repliedById: string | null;
+  repliedAt: string | null;
 };
 
 export const REVIEWS_PATH = '/admin/reviews';
@@ -27,6 +31,7 @@ export type AdminCreateReviewInput = {
   role?: string;
   approve?: boolean;
   feature?: boolean;
+  mediaIds?: string[];
 };
 
 export const reviewsApi = {
@@ -38,5 +43,8 @@ export const reviewsApi = {
   unpublish: (id: string) => adminApi.post(`${REVIEWS_PATH}/${id}/unpublish`),
   feature: (id: string) => adminApi.post(`${REVIEWS_PATH}/${id}/feature`),
   unfeature: (id: string) => adminApi.post(`${REVIEWS_PATH}/${id}/unfeature`),
+  /** Blank/whitespace-only text clears the reply. */
+  reply: (id: string, reply: string) =>
+    adminApi.post<AdminReview>(`${REVIEWS_PATH}/${id}/reply`, { reply }),
   remove: (id: string) => adminApi.delete(`${REVIEWS_PATH}/${id}`),
 };

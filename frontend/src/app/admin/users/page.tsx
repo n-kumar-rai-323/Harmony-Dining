@@ -18,6 +18,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { Controller, useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
@@ -42,9 +44,16 @@ import {
   type AdminUserRow,
   type AdminUserDetail,
   type AdminRole,
+  type AdminStatus,
   type PermissionInfo,
   type PermissionOverride,
 } from '@/lib/admin/resources/users';
+import {
+  userFormSchema,
+  resetPasswordSchema,
+  type UserFormValues,
+  type ResetPasswordFormValues,
+} from '@/validation/admin-user.schema';
 
 const ROLE_COLOR: Record<AdminRole, 'default' | 'primary' | 'secondary' | 'info'> = {
   SUPER_ADMIN: 'secondary',
@@ -52,6 +61,21 @@ const ROLE_COLOR: Record<AdminRole, 'default' | 'primary' | 'secondary' | 'info'
   MANAGER: 'info',
   STAFF: 'default',
 };
+
+/**
+ * Without this, React Hook Form silently updates formState.errors on a
+ * failed client-side validation and Save does nothing visible at all.
+ */
+function flattenFormErrors(errors: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const val of Object.values(errors)) {
+    if (!val || typeof val !== 'object') continue;
+    const message = (val as { message?: unknown }).message;
+    if (typeof message === 'string') out.push(message);
+    else out.push(...flattenFormErrors(val as Record<string, unknown>));
+  }
+  return out;
+}
 
 function fmtDateTime(iso: string | null) {
   return iso ? new Date(iso).toLocaleString() : 'never';
@@ -191,6 +215,7 @@ export default function AdminUsersPage() {
           value={(params.role as string) ?? ''}
           onChange={(e) => setParam('role', e.target.value || undefined)}
           sx={{ minWidth: 150 }}
+          slotProps={{ htmlInput: { autoComplete: 'off' } }}
         >
           <MenuItem value="">All</MenuItem>
           {ADMIN_ROLES.map((r) => (
@@ -204,6 +229,7 @@ export default function AdminUsersPage() {
           value={(params.status as string) ?? ''}
           onChange={(e) => setParam('status', e.target.value || undefined)}
           sx={{ minWidth: 140 }}
+          slotProps={{ htmlInput: { autoComplete: 'off' } }}
         >
           <MenuItem value="">All</MenuItem>
           <MenuItem value="ACTIVE">Active</MenuItem>
@@ -328,38 +354,65 @@ function UserDialog({
   onSaved: () => void;
 }) {
   const toast = useToast();
-  const [email, setEmail] = useState(user?.email ?? '');
-  const [name, setName] = useState(user?.name ?? '');
-  const [role, setRole] = useState<AdminRole>(user?.role ?? 'STAFF');
-  const [status, setStatus] = useState(user?.status ?? 'ACTIVE');
-  const [password, setPassword] = useState('');
+  const { state } = useAdminAuth();
+  const myId = state.status === 'authenticated' ? state.user.id : '';
+  const myRole = state.status === 'authenticated' ? state.user.role : '';
+  const isSelf = Boolean(user) && user!.id === myId;
+  // Only a SUPER_ADMIN may grant the SUPER_ADMIN role — matches the backend's
+  // assertMayManageRole check, so the option doesn't just fail on save.
+  const assignableRoles = ADMIN_ROLES.filter(
+    (r) => r !== 'SUPER_ADMIN' || myRole === 'SUPER_ADMIN',
+  );
+
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  async function save() {
-    setSaving(true);
-    setErrors([]);
-    try {
-      if (user) {
-        await usersApi.update(user.id, { name: name.trim(), role, status });
-      } else {
-        await usersApi.create({ email: email.trim(), name: name.trim(), role, password });
-      }
-      toast.success('User saved');
-      onSaved();
-    } catch (err) {
-      if (err instanceof AdminApiError) setErrors(err.messages);
-      else toast.error('Could not save');
-    } finally {
-      setSaving(false);
-    }
-  }
+  const { control, handleSubmit } = useForm<UserFormValues>({
+    resolver: yupResolver(userFormSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      mode: user ? 'edit' : 'create',
+      email: user?.email ?? '',
+      name: user?.name ?? '',
+      role: user?.role ?? 'STAFF',
+      status: user?.status ?? 'ACTIVE',
+      password: '',
+    },
+  });
 
-  const valid = user
-    ? name.trim().length >= 2
-    : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
-      name.trim().length >= 2 &&
-      password.length >= 10;
+  const onSubmit = handleSubmit(
+    async (values) => {
+      setErrors([]);
+      setSaving(true);
+      try {
+        if (user) {
+          await usersApi.update(user.id, {
+            name: values.name.trim(),
+            role: values.role,
+            status: values.status as AdminStatus,
+          });
+        } else {
+          await usersApi.create({
+            email: (values.email ?? '').trim(),
+            name: values.name.trim(),
+            role: values.role,
+            password: values.password ?? '',
+          });
+        }
+        toast.success('User saved');
+        onSaved();
+      } catch (err) {
+        if (err instanceof AdminApiError) setErrors(err.messages);
+        else toast.error('Could not save');
+      } finally {
+        setSaving(false);
+      }
+    },
+    (formErrors) => {
+      const messages = flattenFormErrors(formErrors as Record<string, unknown>);
+      setErrors(messages.length > 0 ? messages : ['Please check the highlighted fields.']);
+    },
+  );
 
   return (
     <Dialog open onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
@@ -370,47 +423,109 @@ function UserDialog({
             <Typography key={i} variant="caption" color="error">{m}</Typography>
           ))}
           {!user && (
-            <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} fullWidth autoFocus />
+            <Controller
+              name="email"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  autoFocus
+                  error={Boolean(fieldState.error)}
+                  helperText={fieldState.error?.message}
+                />
+              )}
+            />
           )}
-          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} fullWidth />
-          <TextField
-            select
-            label="Role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as AdminRole)}
-            fullWidth
-          >
-            {ADMIN_ROLES.map((r) => (
-              <MenuItem key={r} value={r}>{r}</MenuItem>
-            ))}
-          </TextField>
+          <Controller
+            name="name"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="Name"
+                fullWidth
+                error={Boolean(fieldState.error)}
+                helperText={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="role"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                select
+                label="Role"
+                disabled={isSelf}
+                fullWidth
+                slotProps={{ htmlInput: { autoComplete: 'off' } }}
+                error={Boolean(fieldState.error)}
+                helperText={
+                  fieldState.error?.message ??
+                  (isSelf ? 'You cannot change your own role.' : undefined)
+                }
+              >
+                {assignableRoles.map((r) => (
+                  <MenuItem key={r} value={r}>{r}</MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
           {user && (
-            <TextField
-              select
-              label="Status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as typeof status)}
-              fullWidth
-            >
-              <MenuItem value="ACTIVE">Active</MenuItem>
-              <MenuItem value="DISABLED">Disabled</MenuItem>
-            </TextField>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? 'ACTIVE'}
+                  select
+                  label="Status"
+                  disabled={isSelf}
+                  fullWidth
+                  slotProps={{ htmlInput: { autoComplete: 'off' } }}
+                  error={Boolean(fieldState.error)}
+                  helperText={
+                    fieldState.error?.message ??
+                    (isSelf ? 'You cannot disable your own account.' : undefined)
+                  }
+                >
+                  <MenuItem value="ACTIVE">Active</MenuItem>
+                  <MenuItem value="DISABLED">Disabled</MenuItem>
+                </TextField>
+              )}
+            />
           )}
           {!user && (
-            <TextField
-              label="Temporary password"
-              type="text"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              fullWidth
-              helperText="At least 10 characters. Share it securely; the user can change it later."
+            <Controller
+              name="password"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  label="Temporary password"
+                  type="text"
+                  fullWidth
+                  error={Boolean(fieldState.error)}
+                  helperText={
+                    fieldState.error?.message ??
+                    'At least 10 characters. Share it securely; the user can change it later.'
+                  }
+                />
+              )}
             />
           )}
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>Cancel</Button>
-        <Button variant="contained" onClick={save} disabled={saving || !valid}>
+        <Button variant="contained" onClick={onSubmit} disabled={saving}>
           {saving ? 'Saving…' : 'Save'}
         </Button>
       </DialogActions>
@@ -430,15 +545,20 @@ function PasswordDialog({
   onDone: () => void;
 }) {
   const toast = useToast();
-  const [pw, setPw] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function save() {
-    setSaving(true);
+  const { control, handleSubmit } = useForm<ResetPasswordFormValues>({
+    resolver: yupResolver(resetPasswordSchema),
+    mode: 'onTouched',
+    defaultValues: { newPassword: '' },
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
     setError(null);
+    setSaving(true);
     try {
-      await usersApi.resetPassword(user.id, pw);
+      await usersApi.resetPassword(user.id, values.newPassword);
       toast.success('Password reset');
       onDone();
     } catch (err) {
@@ -446,7 +566,7 @@ function PasswordDialog({
     } finally {
       setSaving(false);
     }
-  }
+  });
 
   return (
     <Dialog open onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
@@ -457,20 +577,26 @@ function PasswordDialog({
             Set a new password for {user.name}. Their existing sessions are ended.
           </Typography>
           {error && <Alert severity="error">{error}</Alert>}
-          <TextField
-            label="New password"
-            type="text"
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            fullWidth
-            autoFocus
-            helperText="At least 10 characters."
+          <Controller
+            name="newPassword"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label="New password"
+                type="text"
+                fullWidth
+                autoFocus
+                error={Boolean(fieldState.error)}
+                helperText={fieldState.error?.message ?? 'At least 10 characters.'}
+              />
+            )}
           />
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>Cancel</Button>
-        <Button variant="contained" onClick={save} disabled={saving || pw.length < 10}>
+        <Button variant="contained" onClick={onSubmit} disabled={saving}>
           {saving ? 'Saving…' : 'Reset password'}
         </Button>
       </DialogActions>

@@ -1,5 +1,6 @@
 import {
   menuData,
+  type DietaryType,
   type MenuCategory,
   type MenuItem,
 } from '@/data/menu-data';
@@ -17,9 +18,11 @@ type ApiMenuItem = {
   name: string;
   description: string | null;
   price: number | null;
-  priceLabel: string | null;
   imageUrl: string | null;
   tags: string[];
+  ingredients: string[];
+  dietary: DietaryType | null;
+  isAvailable: boolean;
   isFeatured: boolean;
   variants: ApiMenuVariant[];
   categoryName?: string;
@@ -51,9 +54,13 @@ function apiItemToLocal(item: ApiMenuItem): MenuItem {
   return {
     name: item.name,
     price: item.price ?? undefined,
-    priceLabel: item.priceLabel ?? undefined,
     description: item.description ?? undefined,
     variants: item.variants.length > 0 ? item.variants : undefined,
+    imageUrl: item.imageUrl,
+    ingredients: item.ingredients,
+    tags: item.tags,
+    dietary: item.dietary,
+    isAvailable: item.isAvailable,
     // The public API only ever returns published items.
     status: 'VERIFIED',
   };
@@ -63,14 +70,18 @@ function apiItemToLocal(item: ApiMenuItem): MenuItem {
    Public accessors
 ========================================================= */
 
-/** Full menu for the /menu page. API-driven, falls back to local data. */
+/**
+ * Full menu for the /menu page. API-driven; falls back to the static local
+ * menu only when the API itself is unreachable — a real "no categories yet"
+ * response from the admin-managed menu is shown as-is, not papered over.
+ */
 export async function getMenuCategories(): Promise<MenuCategory[]> {
   const data = await apiGet<{ categories: ApiMenuCategory[] }>(
     '/public/menu',
     { revalidate: 300 },
   );
 
-  if (!data || data.categories.length === 0) {
+  if (!data) {
     return localVisibleCategories();
   }
 
@@ -87,7 +98,6 @@ export type FeaturedMenuItem = {
   name: string;
   description: string | null;
   price: number | null;
-  priceLabel: string | null;
   imageUrl: string | null;
   categoryName: string | null;
   group: 'FOOD' | 'BEVERAGES' | 'BAR' | null;
@@ -112,7 +122,6 @@ export async function getFeaturedMenuItems(
     name: item.name,
     description: item.description,
     price: item.price,
-    priceLabel: item.priceLabel,
     imageUrl: item.imageUrl,
     categoryName: item.categoryName ?? null,
     group: null,

@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { GalleryCategory, PublishStatus } from '@prisma/client';
 import { PaginationQuery } from '../common/pagination';
+import { MinWords } from '../common/validators/min-words.validator';
 
 export class CreateGalleryItemDto {
   @IsString()
@@ -18,11 +19,13 @@ export class CreateGalleryItemDto {
   @IsString()
   @MinLength(2)
   @MaxLength(160)
+  @MinWords(2, { message: 'Title must be at least 2 words' })
   title!: string;
 
   @IsString()
   @MinLength(2)
   @MaxLength(300)
+  @MinWords(3, { message: 'Alt text must describe the image in at least 3 words' })
   altText!: string;
 
   @IsEnum(GalleryCategory)
@@ -31,6 +34,7 @@ export class CreateGalleryItemDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @MinWords(3, { message: 'Caption must be at least 3 words' })
   caption?: string;
 
   @IsOptional()
@@ -52,12 +56,14 @@ export class UpdateGalleryItemDto {
   @IsString()
   @MinLength(2)
   @MaxLength(160)
+  @MinWords(2, { message: 'Title must be at least 2 words' })
   title?: string;
 
   @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(300)
+  @MinWords(3, { message: 'Alt text must describe the image in at least 3 words' })
   altText?: string;
 
   @IsOptional()
@@ -67,6 +73,7 @@ export class UpdateGalleryItemDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @MinWords(3, { message: 'Caption must be at least 3 words' })
   caption?: string;
 
   @IsOptional()

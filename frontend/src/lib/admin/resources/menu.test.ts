@@ -4,20 +4,13 @@ import { formatPrice } from './menu';
 
 describe('formatPrice', () => {
   it('shows a single price', () => {
-    expect(formatPrice({ price: 280, priceLabel: null, variants: [] })).toBe('Rs 280');
-  });
-
-  it('prefers a price label over a numeric price', () => {
-    expect(
-      formatPrice({ price: 280, priceLabel: 'Market price', variants: [] }),
-    ).toBe('Market price');
+    expect(formatPrice({ price: 280, variants: [] })).toBe('Rs 280');
   });
 
   it('shows a range for multiple variants, low to high', () => {
     expect(
       formatPrice({
         price: null,
-        priceLabel: null,
         variants: [
           { label: 'Full', price: 280 },
           { label: 'Half', price: 150 },
@@ -30,13 +23,12 @@ describe('formatPrice', () => {
     expect(
       formatPrice({
         price: null,
-        priceLabel: null,
         variants: [{ label: 'Only', price: 199 }],
       }),
     ).toBe('Rs 199');
   });
 
   it('falls back to a dash when nothing is priced', () => {
-    expect(formatPrice({ price: null, priceLabel: null, variants: [] })).toBe('—');
+    expect(formatPrice({ price: null, variants: [] })).toBe('—');
   });
 });

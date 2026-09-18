@@ -214,7 +214,7 @@ export default function LocationExperience({
           sx={{
             my: 2.6,
 
-            height: 1,
+            height: '1px',
 
             bgcolor: alpha(
               theme.palette.primary
@@ -564,7 +564,7 @@ export default function LocationExperience({
               }}
             >
               {location.openingHours ??
-                'Opening hours will be maintained from the restaurant management system.'}
+                'Please call us for our current opening hours.'}
             </Typography>
           </Box>
         </Box>

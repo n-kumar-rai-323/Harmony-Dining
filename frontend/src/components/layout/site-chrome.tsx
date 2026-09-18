@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 
-import type { SocialLink } from '@/data/site';
+import type { SiteContact, SocialLink } from '@/data/site';
 
 import Footer from '@/components/layout/footer';
 import Navbar from '@/components/layout/navbar';
@@ -11,6 +11,7 @@ import SocialFloatingBar from '@/components/layout/social-floating-bar';
 
 type SiteChromeProps = {
   social: SocialLink[];
+  contact: SiteContact;
   children: React.ReactNode;
 };
 
@@ -18,7 +19,7 @@ type SiteChromeProps = {
  * Public-site chrome (nav, footer, floating social bar, promo overlay).
  * Suppressed under /admin, which ships its own shell.
  */
-export default function SiteChrome({ social, children }: SiteChromeProps) {
+export default function SiteChrome({ social, contact, children }: SiteChromeProps) {
   const pathname = usePathname();
   const isAdmin = pathname === '/admin' || pathname?.startsWith('/admin/');
 
@@ -35,7 +36,7 @@ export default function SiteChrome({ social, children }: SiteChromeProps) {
 
       {children}
 
-      <Footer social={social} />
+      <Footer social={social} contact={contact} />
     </>
   );
 }

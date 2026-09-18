@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import ReservationExperience from '@/components/reservation/reservation-experience';
+import { getPageHeaders } from '@/lib/api/page-headers';
 
 export const metadata: Metadata = {
   title: 'Reserve a Table',
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ReservationPage() {
-  return <ReservationExperience />;
+export default async function ReservationPage() {
+  const { reservation: hero } = await getPageHeaders();
+  return <ReservationExperience hero={hero ?? undefined} />;
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import MenuExperience from '@/components/menu/menu-experience';
 import { getMenuCategories } from '@/lib/api/menu';
+import { getPageHeaders } from '@/lib/api/page-headers';
 
 export const metadata: Metadata = {
   title: 'Menu',
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default async function MenuPage() {
-  const categories = await getMenuCategories();
+  const [categories, { menu: hero }] = await Promise.all([
+    getMenuCategories(),
+    getPageHeaders(),
+  ]);
 
-  return <MenuExperience categories={categories} />;
+  return <MenuExperience categories={categories} hero={hero ?? undefined} />;
 }

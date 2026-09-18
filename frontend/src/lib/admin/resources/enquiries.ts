@@ -35,6 +35,7 @@ export type EnquiryHistoryEntry = {
   fromStatus: EnquiryStatus | null;
   toStatus: EnquiryStatus;
   changedById: string | null;
+  changedByName: string | null;
   note: string | null;
   createdAt: string;
 };

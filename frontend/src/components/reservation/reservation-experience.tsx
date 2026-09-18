@@ -14,9 +14,11 @@ import {
   Box,
   Button,
   Container,
+  IconButton,
   MenuItem,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -24,6 +26,8 @@ import {
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
@@ -44,6 +48,7 @@ import {
 } from '@/validation/reservation.schema';
 
 import { getTodayLocalDate } from '@/lib/date';
+import type { PageHeaderContent } from '@/lib/api/page-headers';
 import {
   getReservationMaxGuests,
   getReservationTimeSlots,
@@ -68,7 +73,14 @@ const reservationBenefits = getReservationBenefits();
    PAGE
 ========================================================= */
 
-export default function ReservationExperience() {
+type ReservationExperienceProps = {
+  /** Admin-managed hero copy. Falls back to the built-in default when omitted. */
+  hero?: PageHeaderContent;
+};
+
+export default function ReservationExperience({
+  hero,
+}: ReservationExperienceProps) {
   const theme = useTheme();
 
   const [
@@ -84,6 +96,17 @@ export default function ReservationExperience() {
   ] = useState<Availability | null>(
     null,
   );
+
+  const [copied, setCopied] = useState(false);
+  async function copyReference(reference: string) {
+    try {
+      await navigator.clipboard.writeText(reference);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable (unsupported browser/context) — no-op.
+    }
+  }
 
   const today =
     useMemo(
@@ -314,8 +337,8 @@ export default function ReservationExperience() {
             }}
           >
             <Image
-              src="/images/home/harmony-hero-dining.jpg"
-              alt="Dining experience at Harmony Dining and Event Center"
+              src={hero?.image ?? '/images/home/harmony-hero-dining.jpg'}
+              alt={hero?.imageAlt ?? 'Dining experience at Harmony Dining and Event Center'}
               fill
               priority
               quality={80}
@@ -390,7 +413,7 @@ export default function ReservationExperience() {
                       'secondary.light',
                   }}
                 >
-                  Reserve a Table
+                  {hero?.eyebrow ?? 'Reserve a Table'}
                 </Typography>
 
                 <Typography
@@ -406,7 +429,7 @@ export default function ReservationExperience() {
                       'primary.contrastText',
                   }}
                 >
-                  Good food brings people together.
+                  {hero?.title ?? 'Good food brings people together.'}
                 </Typography>
 
                 <Typography
@@ -424,16 +447,12 @@ export default function ReservationExperience() {
                       0.8,
                   }}
                 >
-                  Choose your preferred
-                  date, time and table
-                  size. Harmony will
-                  review availability
-                  and confirm the
-                  reservation with you.
+                  {hero?.description ??
+                    'Choose your preferred date, time and table size. Harmony will review availability and confirm the reservation with you.'}
                 </Typography>
 
                 <Link
-                  href="#reservation-form"
+                  href={hero?.primaryCta?.href ?? '#reservation-form'}
                   style={{
                     display:
                       'inline-flex',
@@ -461,7 +480,7 @@ export default function ReservationExperience() {
                       px: 3,
                     }}
                   >
-                    Reserve Your Table
+                    {hero?.primaryCta?.label ?? 'Reserve Your Table'}
                   </Button>
                 </Link>
               </Box>
@@ -1184,9 +1203,48 @@ export default function ReservationExperience() {
                               800,
                           }}
                         >
-                          Request received — reference{' '}
-                          {submitResult.reference}
+                          Request received
                         </Typography>
+
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          sx={{
+                            alignItems: 'center',
+                            mt: 0.5,
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontWeight: 700,
+                              fontSize: '0.85rem',
+                              letterSpacing: 0.5,
+                              px: 1,
+                              py: 0.35,
+                              borderRadius: 1,
+                              bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+                              border: '1px solid',
+                              borderColor: (t) => alpha(t.palette.primary.main, 0.3),
+                            }}
+                          >
+                            {submitResult.reference}
+                          </Box>
+                          <Tooltip title={copied ? 'Copied!' : 'Copy reference number'}>
+                            <IconButton
+                              size="small"
+                              onClick={() => copyReference(submitResult.reference)}
+                              aria-label="Copy reference number"
+                            >
+                              {copied ? (
+                                <CheckRoundedIcon fontSize="inherit" sx={{ color: 'primary.main' }} />
+                              ) : (
+                                <ContentCopyRoundedIcon fontSize="inherit" />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
 
                         <Typography
                           variant="caption"
@@ -1194,7 +1252,7 @@ export default function ReservationExperience() {
                             display:
                               'block',
 
-                            mt: 0.25,
+                            mt: 0.5,
 
                             color:
                               'text.secondary',

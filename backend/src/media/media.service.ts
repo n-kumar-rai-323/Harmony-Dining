@@ -180,7 +180,7 @@ export class MediaService {
   }
 
   private async countReferences(mediaId: string) {
-    const [menuItems, galleryItems, eventCovers, eventMedia, eventPosters] =
+    const [menuItems, galleryItems, eventCovers, eventMedia, eventPosters, reviewPhotos] =
       await this.prisma.$transaction([
         this.prisma.menuItem.count({ where: { mediaId, deletedAt: null } }),
         this.prisma.galleryItem.count({ where: { mediaId, deletedAt: null } }),
@@ -189,8 +189,9 @@ export class MediaService {
         }),
         this.prisma.eventMedia.count({ where: { mediaId } }),
         this.prisma.eventMedia.count({ where: { posterMediaId: mediaId } }),
+        this.prisma.reviewPhoto.count({ where: { mediaId } }),
       ]);
-    return { menuItems, galleryItems, eventCovers, eventMedia, eventPosters };
+    return { menuItems, galleryItems, eventCovers, eventMedia, eventPosters, reviewPhotos };
   }
 }
 

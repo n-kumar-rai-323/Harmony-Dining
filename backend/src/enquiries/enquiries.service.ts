@@ -167,9 +167,27 @@ export class EnquiriesService {
     if (row.alternativeDate) dates.push(toDateString(row.alternativeDate));
     const conflicts = await this.conflictsForDates(dates, id);
 
+    const actorIds = [
+      ...new Set(
+        row.history
+          .map((h) => h.changedById)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const actors = actorIds.length
+      ? await this.prisma.adminUser.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const nameById = new Map(actors.map((a) => [a.id, a.name]));
+
     return {
       ...serialize(row),
-      history: row.history,
+      history: row.history.map((h) => ({
+        ...h,
+        changedByName: h.changedById ? (nameById.get(h.changedById) ?? null) : null,
+      })),
       conflicts: {
         preferred: conflicts.get(toDateString(row.preferredDate)) ?? null,
         alternative: row.alternativeDate

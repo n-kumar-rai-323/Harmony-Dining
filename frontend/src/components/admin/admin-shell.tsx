@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
-  Chip,
+  Button,
   Divider,
   Drawer,
   IconButton,
@@ -18,24 +19,101 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Popover,
   Stack,
   Toolbar,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 
 import { ADMIN_NAV } from '@/lib/admin/nav';
 import { useAdminAuth } from '@/lib/admin/auth-context';
+import {
+  notificationsApi,
+  ENTITY_HREF,
+  type AdminNotification,
+} from '@/lib/admin/resources/notifications';
 
 const DRAWER_WIDTH = 264;
 
+function timeAgo(iso: string): string {
+  const diffSec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  const units: [string, number][] = [
+    ['year', 31536000],
+    ['month', 2592000],
+    ['week', 604800],
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+  ];
+  for (const [label, secs] of units) {
+    const value = Math.floor(diffSec / secs);
+    if (value >= 1) return `${value} ${label}${value > 1 ? 's' : ''} ago`;
+  }
+  return 'just now';
+}
+
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { state, logout, hasPermission } = useAdminAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const canSeeNotifications = hasPermission('notifications.read');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
+  const [notifItems, setNotifItems] = useState<AdminNotification[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  useEffect(() => {
+    if (!canSeeNotifications) return;
+    let cancelled = false;
+    function poll() {
+      notificationsApi
+        .unreadCount()
+        .then((res) => {
+          if (!cancelled) setUnreadCount(res.unreadCount);
+        })
+        .catch(() => {});
+    }
+    poll();
+    const t = setInterval(poll, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [canSeeNotifications]);
+
+  async function openNotifications(anchor: HTMLElement) {
+    setNotifAnchor(anchor);
+    setNotifLoading(true);
+    try {
+      const res = await notificationsApi.list('?pageSize=10');
+      setNotifItems(res.items);
+      setUnreadCount(res.unreadCount);
+    } finally {
+      setNotifLoading(false);
+    }
+  }
+
+  async function openNotification(n: AdminNotification) {
+    setNotifAnchor(null);
+    if (!n.read) {
+      setUnreadCount((c) => Math.max(0, c - 1));
+      notificationsApi.markRead(n.id).catch(() => {});
+    }
+    const href = n.entityType ? ENTITY_HREF[n.entityType] : undefined;
+    if (href) router.push(href);
+  }
+
+  async function markAllRead() {
+    await notificationsApi.markAllRead().catch(() => {});
+    setUnreadCount(0);
+    setNotifItems((items) => items.map((n) => ({ ...n, read: true })));
+  }
 
   const user = state.status === 'authenticated' ? state.user : null;
 
@@ -77,13 +155,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               ? pathname === '/admin'
               : pathname.startsWith(item.href);
           const Icon = item.icon;
-          const button = (
+          return (
             <ListItemButton
               key={item.href}
-              component={item.ready ? Link : 'div'}
-              href={item.ready ? item.href : undefined}
+              component={Link}
+              href={item.href}
               selected={selected}
-              disabled={!item.ready}
               onClick={() => setMobileOpen(false)}
               sx={{ mb: 0.25, py: 0.85 }}
             >
@@ -101,17 +178,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   },
                 }}
               />
-              {!item.ready && (
-                <Chip label="soon" size="small" variant="outlined" />
-              )}
             </ListItemButton>
-          );
-          return item.ready ? (
-            button
-          ) : (
-            <Tooltip key={item.href} title="Coming soon" placement="right">
-              <span>{button}</span>
-            </Tooltip>
           );
         })}
       </List>
@@ -152,6 +219,88 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               {current?.label ?? 'Admin'}
             </Typography>
           </Stack>
+
+          {canSeeNotifications && (
+            <>
+              <IconButton
+                onClick={(e) => openNotifications(e.currentTarget)}
+                aria-label="Notifications"
+                sx={{ mr: 1 }}
+              >
+                <Badge
+                  badgeContent={unreadCount}
+                  color="error"
+                  max={99}
+                  slotProps={{ badge: { style: { right: 2, top: 2 } } }}
+                >
+                  <NotificationsRoundedIcon />
+                </Badge>
+              </IconButton>
+              <Popover
+                open={Boolean(notifAnchor)}
+                anchorEl={notifAnchor}
+                onClose={() => setNotifAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              >
+                <Box sx={{ width: 340, maxWidth: '100vw' }}>
+                  <Stack
+                    direction="row"
+                    sx={{ alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Notifications
+                    </Typography>
+                    {notifItems.some((n) => !n.read) && (
+                      <Button size="small" onClick={markAllRead}>
+                        Mark all read
+                      </Button>
+                    )}
+                  </Stack>
+                  <Divider />
+                  <Box sx={{ maxHeight: 360, overflowY: 'auto' }}>
+                    {notifLoading ? (
+                      <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                        Loading…
+                      </Typography>
+                    ) : notifItems.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                        No notifications yet.
+                      </Typography>
+                    ) : (
+                      notifItems.map((n) => (
+                        <Box
+                          key={n.id}
+                          onClick={() => openNotification(n)}
+                          sx={{
+                            px: 2,
+                            py: 1.25,
+                            cursor: 'pointer',
+                            bgcolor: n.read ? 'transparent' : 'action.hover',
+                            '&:hover': { bgcolor: 'action.hover' },
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: n.read ? 500 : 700 }}>
+                            {n.title}
+                          </Typography>
+                          {n.message && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {n.message}
+                            </Typography>
+                          )}
+                          <Typography variant="caption" color="text.secondary">
+                            {timeAgo(n.createdAt)}
+                          </Typography>
+                        </Box>
+                      ))
+                    )}
+                  </Box>
+                </Box>
+              </Popover>
+            </>
+          )}
 
           {user && (
             <>

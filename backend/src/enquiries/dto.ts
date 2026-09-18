@@ -1,4 +1,5 @@
 import {
+  IsEmail,
   IsEnum,
   IsInt,
   IsNumberString,
@@ -32,7 +33,7 @@ export class CreateEventEnquiryDto {
   phone!: string;
 
   @IsOptional()
-  @IsString()
+  @IsEmail()
   @MaxLength(200)
   email?: string;
 

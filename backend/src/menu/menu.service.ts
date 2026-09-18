@@ -21,6 +21,7 @@ import type {
 
 const ITEM_INCLUDE = {
   category: { select: { id: true, name: true, group: true } },
+  media: { select: { id: true, url: true } },
   variants: { orderBy: { sortOrder: 'asc' } },
 } satisfies Prisma.MenuItemInclude;
 
@@ -164,6 +165,7 @@ export class MenuService {
       deletedAt: null,
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.isAvailable !== undefined ? { isAvailable: query.isAvailable } : {}),
       ...(query.search
         ? {
             OR: [
@@ -205,7 +207,7 @@ export class MenuService {
   async createItem(dto: CreateItemDto, ctx: AuditContext) {
     await this.requireCategory(dto.categoryId);
     await this.assertMediaExists(dto.mediaId);
-    this.assertPricing(dto.price ?? null, dto.priceLabel ?? null, dto.variants);
+    this.assertPricing(dto.price ?? null, dto.variants);
 
     const slug = await uniqueSlug(dto.name, (s) =>
       this.prisma.menuItem
@@ -220,11 +222,13 @@ export class MenuService {
         slug,
         description: dto.description?.trim() || null,
         price: dto.price ?? null,
-        priceLabel: dto.priceLabel?.trim() || null,
-        mediaId: dto.mediaId ?? null,
+        mediaId: dto.mediaId,
+        dietary: dto.dietary ?? null,
+        isAvailable: dto.isAvailable ?? true,
         isFeatured: dto.isFeatured ?? false,
         sortOrder: dto.sortOrder ?? 0,
         tags: dto.tags ?? [],
+        ingredients: dto.ingredients ?? [],
         variants: dto.variants?.length
           ? {
               create: dto.variants.map((v, i) => ({
@@ -263,13 +267,10 @@ export class MenuService {
     }
 
     const nextPrice = dto.price === undefined ? before.price : dto.price;
-    const nextLabel =
-      dto.priceLabel === undefined ? before.priceLabel : dto.priceLabel;
     const nextVariants = dto.variants;
-    if (dto.price !== undefined || dto.priceLabel !== undefined || nextVariants) {
+    if (dto.price !== undefined || nextVariants) {
       this.assertPricing(
         nextPrice != null ? Number(nextPrice) : null,
-        nextLabel,
         nextVariants ??
           before.variants.map((v) => ({ label: v.label, price: Number(v.price) })),
       );
@@ -316,14 +317,13 @@ export class MenuService {
               ? undefined
               : dto.description.trim() || null,
           price: dto.price === undefined ? undefined : dto.price,
-          priceLabel:
-            dto.priceLabel === undefined
-              ? undefined
-              : dto.priceLabel?.trim() || null,
           mediaId: dto.mediaId === undefined ? undefined : dto.mediaId,
+          dietary: dto.dietary === undefined ? undefined : dto.dietary,
+          isAvailable: dto.isAvailable,
           isFeatured: dto.isFeatured,
           sortOrder: dto.sortOrder,
           tags: dto.tags,
+          ingredients: dto.ingredients,
         },
         include: ITEM_INCLUDE,
       });
@@ -414,15 +414,13 @@ export class MenuService {
 
   private assertPricing(
     price: number | null,
-    priceLabel: string | null,
     variants?: Pick<VariantDto, 'price' | 'label'>[],
   ): void {
     const hasPrice = price != null && price >= 0;
-    const hasLabel = Boolean(priceLabel && priceLabel.trim());
     const hasVariants = Boolean(variants && variants.length > 0);
-    if (!hasPrice && !hasLabel && !hasVariants) {
+    if (!hasPrice && !hasVariants) {
       throw new BadRequestException(
-        'An item needs a price, a price label, or at least one variant.',
+        'An item needs a price or at least one variant.',
       );
     }
   }

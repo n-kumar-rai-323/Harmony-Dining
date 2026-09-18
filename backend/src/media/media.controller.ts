@@ -21,7 +21,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types';
 import { auditContext } from '../common/request-context';
 import { MediaService } from './media.service';
-import { MAX_UPLOAD_BYTES } from './image-validation';
+import { MAX_UPLOAD_BYTES, multerImageFilter } from './image-validation';
 import { MediaQueryDto, UpdateMediaDto, UploadMediaDto } from './dto';
 
 @Controller('admin/media')
@@ -43,7 +43,10 @@ export class MediaController {
   @RequirePermissions('media.upload')
   @Post()
   @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_UPLOAD_BYTES },
+      fileFilter: multerImageFilter,
+    }),
   )
   upload(
     @UploadedFile() file: Express.Multer.File | undefined,

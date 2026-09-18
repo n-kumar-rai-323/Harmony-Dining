@@ -20,6 +20,7 @@ describe('Menu (e2e)', () => {
   let prisma: PrismaService;
   let ownerCookie = '';
   let staffCookie = '';
+  let testMediaId = '';
   const createdCategoryIds: string[] = [];
 
   beforeAll(async () => {
@@ -66,6 +67,17 @@ describe('Menu (e2e)', () => {
     };
     ownerCookie = await login(OWNER);
     staffCookie = await login(STAFF);
+
+    const media = await prisma.media.create({
+      data: {
+        storageKey: `e2e/menu-${Date.now()}.jpg`,
+        url: 'https://example.test/e2e-menu.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: 1,
+        originalFilename: 'e2e-menu.jpg',
+      },
+    });
+    testMediaId = media.id;
   });
 
   afterAll(async () => {
@@ -74,6 +86,9 @@ describe('Menu (e2e)', () => {
       await prisma.menuCategory
         .delete({ where: { id } })
         .catch(() => undefined);
+    }
+    if (testMediaId) {
+      await prisma.media.delete({ where: { id: testMediaId } }).catch(() => undefined);
     }
     for (const email of [OWNER, STAFF]) {
       await prisma.session.deleteMany({ where: { admin: { email } } });
@@ -116,7 +131,7 @@ describe('Menu (e2e)', () => {
     const item = await request(app.getHttpServer())
       .post('/api/admin/menu/items')
       .set('Cookie', ownerCookie)
-      .send({ categoryId: cat.body.id, name: 'E2E Drink', price: 300 })
+      .send({ categoryId: cat.body.id, name: 'E2E Drink', price: 300, mediaId: testMediaId })
       .expect(201);
     expect(item.body.status).toBe('DRAFT');
 

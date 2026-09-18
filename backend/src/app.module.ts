@@ -20,9 +20,11 @@ import { GalleryModule } from './gallery/gallery.module';
 import { EventsModule } from './events/events.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { EnquiriesModule } from './enquiries/enquiries.module';
+import { ContactMessagesModule } from './contact-messages/contact-messages.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SiteSettingsModule } from './site-settings/site-settings.module';
 import { HomepageModule } from './homepage/homepage.module';
+import { PageHeadersModule } from './page-headers/page-headers.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -94,9 +96,11 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     EventsModule,
     ReservationsModule,
     EnquiriesModule,
+    ContactMessagesModule,
     ReviewsModule,
     SiteSettingsModule,
     HomepageModule,
+    PageHeadersModule,
     NotificationsModule,
     MailModule,
     DashboardModule,

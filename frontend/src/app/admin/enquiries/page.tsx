@@ -10,27 +10,48 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
-  ListItemIcon,
-  Menu,
   MenuItem,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import type { SvgIconComponent } from '@mui/icons-material';
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import NotificationsActiveRoundedIcon from '@mui/icons-material/NotificationsActiveRounded';
+import ForumRoundedIcon from '@mui/icons-material/ForumRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import EventBusyRoundedIcon from '@mui/icons-material/EventBusyRounded';
+import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
+import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
+import CelebrationRoundedIcon from '@mui/icons-material/CelebrationRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import EventRoundedIcon from '@mui/icons-material/EventRounded';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
+import EventRepeatRoundedIcon from '@mui/icons-material/EventRepeatRounded';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
+import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded';
 
-import { FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
+import {
+  DetailField,
+  DialogHeader,
+  FilterBar,
+  FormSection,
+  HistoryTimeline,
+  PageHeader,
+  QueryBoundary,
+  StatCard,
+} from '@/components/admin/ui';
 import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import { useAdminQuery } from '@/lib/admin/use-admin-query';
 import { useAdminAuth } from '@/lib/admin/auth-context';
-import { AdminApiError } from '@/lib/admin/api';
+import { adminApi, AdminApiError } from '@/lib/admin/api';
+import type { Paginated } from '@/lib/admin/types';
 import {
   enquiriesApi,
   ENQUIRIES_PATH,
@@ -81,6 +102,18 @@ function fmtMoney(v: number | string | null) {
   return `Rs ${n.toLocaleString()}`;
 }
 
+const SUMMARY_TILES: {
+  key: 'NEW' | 'CONTACTED' | 'APPROVED' | 'CANCELLED';
+  label: string;
+  color: 'warning' | 'info' | 'success' | 'secondary';
+  icon: SvgIconComponent;
+}[] = [
+  { key: 'NEW', label: 'New', color: 'warning', icon: NotificationsActiveRoundedIcon },
+  { key: 'CONTACTED', label: 'Contacted', color: 'info', icon: ForumRoundedIcon },
+  { key: 'APPROVED', label: 'Confirmed', color: 'success', icon: CheckCircleRoundedIcon },
+  { key: 'CANCELLED', label: 'Cancelled', color: 'secondary', icon: EventBusyRoundedIcon },
+];
+
 export default function AdminEnquiriesPage() {
   const { hasPermission } = useAdminAuth();
   const canUpdate = hasPermission('enquiries.update');
@@ -98,9 +131,24 @@ export default function AdminEnquiriesPage() {
     return () => clearTimeout(t);
   }, [searchInput, setParam]);
 
-  const [menu, setMenu] = useState<{ anchor: HTMLElement; row: AdminEnquiry } | null>(
-    null,
-  );
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(
+      SUMMARY_TILES.map((t) =>
+        adminApi
+          .get<Paginated<AdminEnquiry>>(`${ENQUIRIES_PATH}?status=${t.key}&pageSize=1`)
+          .then((res) => [t.key, res.total] as const)
+          .catch(() => [t.key, 0] as const),
+      ),
+    ).then((entries) => {
+      if (!cancelled) setCounts(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data]);
+
   const [detailId, setDetailId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -116,19 +164,17 @@ export default function AdminEnquiriesPage() {
       return false;
     } finally {
       setBusy(false);
-      setMenu(null);
     }
   }
 
   const columns: Column<AdminEnquiry>[] = [
     {
-      key: 'ref',
-      header: 'Reference',
-      width: 150,
+      key: 'who',
+      header: 'Full name',
       render: (r) => (
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-            {r.reference}
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {r.fullName}
           </Typography>
           {r.hasConflict && (
             <Tooltip title="Another approved event/enquiry is on this date">
@@ -138,48 +184,14 @@ export default function AdminEnquiriesPage() {
         </Stack>
       ),
     },
-    {
-      key: 'who',
-      header: 'Enquirer',
-      render: (r) => (
-        <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {r.fullName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {r.phone}
-            {r.email ? ` · ${r.email}` : ''}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      key: 'event',
-      header: 'Event',
-      render: (r) => (
-        <Box>
-          <Typography variant="body2">{r.eventType}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {r.guests} guests
-          </Typography>
-        </Box>
-      ),
-    },
+    { key: 'event', header: 'Event type', render: (r) => r.eventType },
     {
       key: 'date',
       header: 'Preferred date',
-      width: 170,
-      render: (r) => (
-        <Box>
-          <Typography variant="body2">{fmtDate(r.preferredDate)}</Typography>
-          {r.alternativeDate && (
-            <Typography variant="caption" color="text.secondary">
-              alt: {fmtDate(r.alternativeDate)}
-            </Typography>
-          )}
-        </Box>
-      ),
+      width: 150,
+      render: (r) => fmtDate(r.preferredDate),
     },
+    { key: 'guests', header: 'Guests', width: 90, render: (r) => r.guests },
     {
       key: 'status',
       header: 'Status',
@@ -193,21 +205,17 @@ export default function AdminEnquiriesPage() {
       header: '',
       width: 48,
       align: 'right',
-      render: (r) => {
-        if (!canUpdate || NEXT_STATUSES[r.status].length === 0) return null;
-        return (
-          <IconButton
-            size="small"
-            disabled={busy}
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenu({ anchor: e.currentTarget, row: r });
-            }}
-          >
-            <MoreVertRoundedIcon fontSize="small" />
-          </IconButton>
-        );
-      },
+      render: (r) => (
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDetailId(r.id);
+          }}
+        >
+          <VisibilityRoundedIcon fontSize="small" />
+        </IconButton>
+      ),
     },
   ];
 
@@ -215,8 +223,21 @@ export default function AdminEnquiriesPage() {
     <Box>
       <PageHeader
         title="Event enquiries"
-        subtitle="Private event and hall booking requests."
+        subtitle='Submissions from the "Tell us about your celebration" form on the website.'
       />
+
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 2,
+          gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' },
+          mb: 3,
+        }}
+      >
+        {SUMMARY_TILES.map((t) => (
+          <StatCard key={t.key} label={t.label} value={counts[t.key] ?? '—'} color={t.color} icon={t.icon} />
+        ))}
+      </Box>
 
       <FilterBar>
         <TextField
@@ -257,7 +278,7 @@ export default function AdminEnquiriesPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ minWidth: 280, flexGrow: 1 }}
         />
-</FilterBar>
+      </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
         <DataTable
@@ -276,34 +297,6 @@ export default function AdminEnquiriesPage() {
           }}
         />
       </QueryBoundary>
-
-      <Menu
-        anchorEl={menu?.anchor ?? null}
-        open={Boolean(menu)}
-        onClose={() => setMenu(null)}
-      >
-        <MenuItem
-          onClick={() => {
-            setDetailId(menu!.row.id);
-            setMenu(null);
-          }}
-        >
-          View details
-        </MenuItem>
-        <Divider />
-        {menu &&
-          NEXT_STATUSES[menu.row.status].map((s) => (
-            <MenuItem
-              key={s}
-              onClick={() => changeStatus(menu.row.id, s)}
-              sx={NEGATIVE.includes(s) ? { color: 'error.main' } : undefined}
-            >
-              <ListItemIcon>
-                <Chip size="small" label={s} color={STATUS_COLOR[s]} />
-              </ListItemIcon>
-            </MenuItem>
-          ))}
-      </Menu>
 
       <Dialog
         open={Boolean(detailId)}
@@ -373,17 +366,11 @@ function EnquiryDetail({
 
   return (
     <>
-      <DialogTitle>
-        {data ? data.reference : 'Enquiry'}
-        {data && (
-          <Chip
-            size="small"
-            label={data.status}
-            color={STATUS_COLOR[data.status]}
-            sx={{ ml: 1 }}
-          />
-        )}
-      </DialogTitle>
+      <DialogHeader
+        title={data ? data.fullName : 'Enquiry'}
+        subtitle={data?.reference}
+        onClose={onClose}
+      />
       <DialogContent dividers>
         {error && <Typography color="error">{error}</Typography>}
         {data && (
@@ -391,66 +378,58 @@ function EnquiryDetail({
             <ConflictBlock label="Conflict on preferred date" conflict={data.conflicts.preferred} />
             <ConflictBlock label="Conflict on alternative date" conflict={data.conflicts.alternative} />
 
-            <Box>
-              <Typography variant="subtitle2">{data.fullName}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {data.phone}
-                {data.email ? ` · ${data.email}` : ''}
-              </Typography>
-            </Box>
-
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr' },
-                gap: 1.5,
+                gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr' },
+                gap: 1.25,
               }}
             >
-              <Field label="Event type">{data.eventType}</Field>
-              <Field label="Guests">{data.guests}</Field>
-              <Field label="Budget">{fmtMoney(data.budget)}</Field>
-              <Field label="Preferred date">{fmtDate(data.preferredDate)}</Field>
-              <Field label="Alternative date">
-                {data.alternativeDate ? fmtDate(data.alternativeDate) : '—'}
-              </Field>
-              <Field label="Time">
-                {data.startTime ? `${data.startTime}–${data.endTime ?? '?'}` : '—'}
-              </Field>
+              <DetailField icon={PhoneRoundedIcon} label="Phone" value={data.phone} />
+              <DetailField icon={EmailRoundedIcon} label="Email" value={data.email ?? '—'} />
+              <DetailField icon={CelebrationRoundedIcon} label="Event type" value={data.eventType} />
+              <DetailField icon={GroupsRoundedIcon} label="Estimated guests" value={data.guests} />
+              <DetailField
+                icon={EventRoundedIcon}
+                label="Preferred date"
+                value={fmtDate(data.preferredDate)}
+              />
+              <DetailField
+                icon={AccessTimeRoundedIcon}
+                label="Preferred time"
+                value={data.startTime ? `${data.startTime}–${data.endTime ?? '?'}` : '—'}
+              />
+              <DetailField
+                icon={EventRepeatRoundedIcon}
+                label="Alternative date"
+                value={data.alternativeDate ? fmtDate(data.alternativeDate) : '—'}
+              />
+              <DetailField icon={PaymentsRoundedIcon} label="Budget" value={fmtMoney(data.budget)} />
+              <DetailField
+                icon={ChatBubbleOutlineRoundedIcon}
+                label="Message"
+                value={data.requirements || '—'}
+                span
+              />
             </Box>
-
-            {data.requirements && (
-              <Field label="Requirements">{data.requirements}</Field>
-            )}
 
             <Divider />
-            <Box>
-              <Typography variant="overline" color="text.secondary">
-                History
-              </Typography>
-              <Stack spacing={1} sx={{ mt: 0.5 }}>
-                {data.history.map((h) => (
-                  <Box key={h.id}>
-                    <Typography variant="body2">
-                      {h.fromStatus ? `${h.fromStatus} → ` : ''}
-                      <strong>{h.toStatus}</strong>
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {fmtDateTime(h.createdAt)}
-                      {h.note ? ` — ${h.note}` : ''}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Box>
+            <FormSection title="History">
+              <HistoryTimeline
+                entries={data.history}
+                statusColor={(s) => STATUS_COLOR[s as EnquiryStatus]}
+                formatWhen={fmtDateTime}
+              />
+            </FormSection>
 
             {canUpdate && options.length > 0 && (
               <>
                 <Divider />
-                <Stack spacing={1.5}>
+                <FormSection title="Update status">
                   <TextField
                     select
                     size="small"
-                    label="Move to status"
+                    label="Status"
                     value={nextStatus}
                     onChange={(e) =>
                       setNextStatus(e.target.value as EnquiryStatus)
@@ -467,10 +446,8 @@ function EnquiryDetail({
                     label="Note (optional)"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    multiline
-                    minRows={2}
                   />
-                </Stack>
+                </FormSection>
               </>
             )}
           </Stack>
@@ -500,21 +477,10 @@ function EnquiryDetail({
               }
             }}
           >
-            Update status
+            Save status
           </Button>
         )}
       </DialogActions>
     </>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-        {label}
-      </Typography>
-      <Typography variant="body2">{children}</Typography>
-    </Box>
   );
 }

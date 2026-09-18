@@ -182,8 +182,8 @@ describe('Media + Gallery (e2e)', () => {
       .set('Cookie', ownerCookie)
       .send({
         mediaId: up.body.id,
-        title: 'Ref',
-        altText: 'ref alt',
+        title: 'Ref Photo',
+        altText: 'ref alt photo',
         category: 'DINING',
       })
       .expect(201);

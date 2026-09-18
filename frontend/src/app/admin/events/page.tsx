@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import {
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -14,18 +15,26 @@ import {
   ListItemIcon,
   Menu,
   MenuItem,
+  Paper,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
+import ImageRoundedIcon from '@mui/icons-material/ImageRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import UploadRoundedIcon from '@mui/icons-material/UploadRounded';
 
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+
 import { ConfirmDialog, DialogHeader, FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
-import { DataTable, type Column } from '@/components/admin/data-table';
 import { useToast } from '@/components/admin/toast';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import { useAdminQuery } from '@/lib/admin/use-admin-query';
@@ -34,6 +43,7 @@ import { AdminApiError } from '@/lib/admin/api';
 import {
   eventsApi,
   EVENTS_PATH,
+  EVENT_CATEGORIES,
   LIFECYCLES,
   toMediaInput,
   type AdminEvent,
@@ -41,6 +51,7 @@ import {
   type EventMediaInput,
 } from '@/lib/admin/resources/events';
 import { uploadMedia, ACCEPTED_IMAGE_TYPES } from '@/lib/admin/resources/media';
+import { eventSchema, EVENT_LIMITS, type EventFormValues } from '@/validation/event.schema';
 
 const LC_COLOR: Record<EventLifecycle, 'default' | 'success' | 'error' | 'info'> = {
   UPCOMING: 'info',
@@ -54,6 +65,75 @@ function fmtDate(iso: string) {
     month: 'short',
     day: 'numeric',
   });
+}
+
+const MAX_GALLERY_PHOTOS = 4;
+
+/**
+ * Without this, React Hook Form silently updates formState.errors on a
+ * failed client-side validation and Save does nothing visible at all.
+ */
+function flattenFormErrors(errors: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const val of Object.values(errors)) {
+    if (!val || typeof val !== 'object') continue;
+    const message = (val as { message?: unknown }).message;
+    if (typeof message === 'string') out.push(message);
+    else out.push(...flattenFormErrors(val as Record<string, unknown>));
+  }
+  return out;
+}
+
+/** Mirrors the public event card so admins can see the result before saving. */
+function EventPreviewCard({
+  title,
+  category,
+  dateLabel,
+  guestsLabel,
+  coverUrl,
+}: {
+  title: string;
+  category: string;
+  dateLabel: string;
+  guestsLabel: string;
+  coverUrl: string;
+}) {
+  return (
+    <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+      <Box sx={{ position: 'relative', aspectRatio: '4 / 3', bgcolor: 'action.hover' }}>
+        {coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverUrl}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'text.disabled' }}>
+            <ImageRoundedIcon fontSize="large" />
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ p: 1.75 }}>
+        <Typography variant="overline" sx={{ color: 'secondary.dark', fontWeight: 800 }}>
+          {category || 'Category'}
+        </Typography>
+        <Typography variant="h6" sx={{ mt: 0.25, fontWeight: 700 }}>
+          {title || 'Event title'}
+        </Typography>
+        <Stack direction="row" spacing={0.75} sx={{ mt: 1, alignItems: 'center', color: 'text.secondary' }}>
+          <CalendarMonthRoundedIcon sx={{ fontSize: 18 }} />
+          <Typography variant="caption">{dateLabel || 'Select a date'}</Typography>
+        </Stack>
+        {guestsLabel && (
+          <Stack direction="row" spacing={0.75} sx={{ mt: 0.5, alignItems: 'center', color: 'text.secondary' }}>
+            <PeopleAltRoundedIcon sx={{ fontSize: 18 }} />
+            <Typography variant="caption">{guestsLabel}</Typography>
+          </Stack>
+        )}
+      </Box>
+    </Paper>
+  );
 }
 
 export default function AdminEventsPage() {
@@ -72,6 +152,12 @@ export default function AdminEventsPage() {
     );
     return () => clearTimeout(t);
   }, [searchInput, setParam]);
+
+  const [tab, setTab] = useState<'UPCOMING' | 'PAST'>('UPCOMING');
+  useEffect(() => {
+    setParam('lifecycle', tab === 'UPCOMING' ? 'UPCOMING' : undefined);
+    setParam('page', 1);
+  }, [tab, setParam]);
 
   const [menu, setMenu] = useState<{ anchor: HTMLElement; row: AdminEvent } | null>(null);
   const [dialog, setDialog] = useState<string | 'new' | null>(null);
@@ -93,77 +179,17 @@ export default function AdminEventsPage() {
     }
   }
 
-  const columns: Column<AdminEvent>[] = [
-    {
-      key: 'title',
-      header: 'Event',
-      render: (r) => (
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          {r.coverMedia && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={r.coverMedia.url}
-              alt=""
-              style={{ width: 56, height: 42, objectFit: 'cover', borderRadius: 4 }}
-            />
-          )}
-          <Box>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {r.title}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {r.category}
-            </Typography>
-          </Box>
-        </Stack>
-      ),
-    },
-    { key: 'date', header: 'Date', width: 130, render: (r) => fmtDate(r.eventDate) },
-    {
-      key: 'lifecycle',
-      header: 'Lifecycle',
-      width: 120,
-      render: (r) => <Chip size="small" label={r.lifecycle} color={LC_COLOR[r.lifecycle]} />,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      width: 100,
-      render: (r) => (
-        <Chip
-          size="small"
-          label={r.status}
-          color={r.status === 'PUBLISHED' ? 'success' : 'default'}
-        />
-      ),
-    },
-    { key: 'media', header: 'Photos', width: 70, align: 'right', render: (r) => r.media.length },
-    {
-      key: 'actions',
-      header: '',
-      width: 48,
-      align: 'right',
-      render: (r) =>
-        canManage || canPublish ? (
-          <IconButton
-            size="small"
-            disabled={busy}
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenu({ anchor: e.currentTarget, row: r });
-            }}
-          >
-            <MoreVertRoundedIcon fontSize="small" />
-          </IconButton>
-        ) : null,
-    },
-  ];
+  const rows = data?.items ?? [];
+  // "Past" clears the server-side lifecycle filter (so it doesn't collide with
+  // "Upcoming" needing the opposite), and instead excludes UPCOMING here —
+  // COMPLETED and CANCELLED both belong in the past view.
+  const visibleRows = tab === 'UPCOMING' ? rows : rows.filter((r) => r.lifecycle !== 'UPCOMING');
 
   return (
     <Box>
       <PageHeader
         title="Events"
-        subtitle="Past celebrations and events shown on the public Events page."
+        subtitle="Events shown on the gallery / past events section."
         action={
           canManage && (
             <Button
@@ -176,6 +202,17 @@ export default function AdminEventsPage() {
           )
         }
       />
+
+      <ToggleButtonGroup
+        value={tab}
+        exclusive
+        onChange={(_, v) => v && setTab(v)}
+        size="small"
+        sx={{ mb: 2 }}
+      >
+        <ToggleButton value="UPCOMING">Upcoming</ToggleButton>
+        <ToggleButton value="PAST">Past</ToggleButton>
+      </ToggleButtonGroup>
 
       <FilterBar>
         <TextField
@@ -191,19 +228,6 @@ export default function AdminEventsPage() {
           <MenuItem value="DRAFT">Draft</MenuItem>
         </TextField>
         <TextField
-          select
-          size="small"
-          label="Lifecycle"
-          value={(params.lifecycle as string) ?? ''}
-          onChange={(e) => setParam('lifecycle', e.target.value || undefined)}
-          sx={{ minWidth: 140 }}
-        >
-          <MenuItem value="">All</MenuItem>
-          {LIFECYCLES.map((l) => (
-            <MenuItem key={l} value={l}>{l}</MenuItem>
-          ))}
-        </TextField>
-        <TextField
           size="small"
           label="Search title"
           value={searchInput}
@@ -213,27 +237,97 @@ export default function AdminEventsPage() {
       </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
-        <DataTable
-          columns={columns}
-          rows={data?.items ?? []}
-          getRowKey={(r) => r.id}
-          loading={loading}
-          emptyText="No events match these filters."
-          onRowClick={(r) => canManage && setDialog(r.id)}
-          pagination={{
-            page: data?.page ?? 1,
-            pageSize: data?.pageSize ?? 20,
-            total: data?.total ?? 0,
-            onPageChange: (p) => setParam('page', p),
-            onPageSizeChange: (s) => setParam('pageSize', s),
-          }}
-        />
+        {visibleRows.length === 0 ? (
+          <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+            No events in this view.
+          </Typography>
+        ) : (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+              gap: 2,
+            }}
+          >
+            {visibleRows.map((ev) => (
+              <Paper
+                key={ev.id}
+                variant="outlined"
+                sx={{
+                  p: 2.25,
+                  borderRadius: 2,
+                  bgcolor: 'action.hover',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.75,
+                }}
+              >
+                {(canManage || canPublish) && (
+                  <IconButton
+                    size="small"
+                    disabled={busy}
+                    onClick={(e) => setMenu({ anchor: e.currentTarget, row: ev })}
+                    sx={{ position: 'absolute', top: 8, right: 8 }}
+                  >
+                    <MoreVertRoundedIcon fontSize="small" />
+                  </IconButton>
+                )}
+
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', pr: 4, flexWrap: 'wrap' }}>
+                  <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 800 }}>
+                    {ev.category}
+                  </Typography>
+                  {ev.status === 'DRAFT' && <Chip size="small" label="Draft" variant="outlined" />}
+                  {ev.lifecycle === 'CANCELLED' && (
+                    <Chip size="small" label="Cancelled" color="error" variant="outlined" />
+                  )}
+                </Stack>
+
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  {ev.title}
+                </Typography>
+
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', color: 'text.secondary' }}>
+                  <CalendarMonthRoundedIcon fontSize="small" />
+                  <Typography variant="body2">{fmtDate(ev.eventDate)}</Typography>
+                </Stack>
+
+                {ev.guestsLabel && (
+                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', color: 'text.secondary' }}>
+                    <PeopleAltRoundedIcon fontSize="small" />
+                    <Typography variant="body2">{ev.guestsLabel}</Typography>
+                  </Stack>
+                )}
+
+                <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                  {canManage && (
+                    <Button
+                      size="small"
+                      startIcon={<EditRoundedIcon fontSize="small" />}
+                      onClick={() => setDialog(ev.id)}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  {canManage && (
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<DeleteOutlineRoundedIcon fontSize="small" />}
+                      onClick={() => setConfirmDel(ev)}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </Stack>
+              </Paper>
+            ))}
+          </Box>
+        )}
       </QueryBoundary>
 
       <Menu anchorEl={menu?.anchor ?? null} open={Boolean(menu)} onClose={() => setMenu(null)}>
-        {canManage && (
-          <MenuItem onClick={() => { setDialog(menu!.row.id); setMenu(null); }}>Edit</MenuItem>
-        )}
         {canPublish && (
           <MenuItem
             onClick={() =>
@@ -258,18 +352,6 @@ export default function AdminEventsPage() {
               </ListItemIcon>
             </MenuItem>
           ))}
-        {canManage && <Divider />}
-        {canManage && (
-          <MenuItem
-            onClick={() => { setConfirmDel(menu!.row); setMenu(null); }}
-            sx={{ color: 'error.main' }}
-          >
-            <ListItemIcon>
-              <DeleteOutlineRoundedIcon fontSize="small" color="error" />
-            </ListItemIcon>
-            Delete
-          </MenuItem>
-        )}
       </Menu>
 
       {dialog && (
@@ -311,29 +393,43 @@ function EventDialog({
   );
   const loaded = !eventId || Boolean(existing.data);
 
-  const [form, setForm] = useState({
-    title: '',
-    category: '',
-    summary: '',
-    description: '',
-    eventDate: '',
-    startTime: '',
-    endTime: '',
-    guestsLabel: '',
-    lifecycle: 'COMPLETED' as EventLifecycle,
-  });
   const [coverMediaId, setCoverMediaId] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState('');
   const [gallery, setGallery] = useState<MediaDraft[]>([]);
   const [hydrated, setHydrated] = useState(!eventId);
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<EventFormValues>({
+    resolver: yupResolver(eventSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      title: '',
+      category: '',
+      summary: '',
+      description: '',
+      eventDate: '',
+      startTime: '',
+      endTime: '',
+      guestsLabel: '',
+      lifecycle: 'COMPLETED',
+    },
+  });
+
+  const title = useWatch({ control, name: 'title' });
+  const category = useWatch({ control, name: 'category' });
+  const eventDate = useWatch({ control, name: 'eventDate' });
+  const guestsLabel = useWatch({ control, name: 'guestsLabel' });
 
   // Populate from the fetched event exactly once.
   if (eventId && existing.data && !hydrated) {
     const e = existing.data;
-    setForm({
+    reset({
       title: e.title,
       category: e.category,
       summary: e.summary,
@@ -355,15 +451,11 @@ function EventDialog({
     setHydrated(true);
   }
 
-  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
-    setForm((f) => ({ ...f, [key]: value }));
-  }
-
   async function uploadCover(file: File | undefined) {
     if (!file) return;
     setUploading(true);
     try {
-      const m = await uploadMedia(file, { folder: 'events', altText: form.title });
+      const m = await uploadMedia(file, { folder: 'events', altText: title });
       setCoverMediaId(m.id);
       setCoverUrl(m.url);
     } catch (err) {
@@ -375,12 +467,16 @@ function EventDialog({
 
   async function addGalleryImage(file: File | undefined) {
     if (!file) return;
+    if (gallery.length >= MAX_GALLERY_PHOTOS) {
+      toast.error(`You can add up to ${MAX_GALLERY_PHOTOS} photos.`);
+      return;
+    }
     setUploading(true);
     try {
-      const m = await uploadMedia(file, { folder: 'events', altText: form.title });
+      const m = await uploadMedia(file, { folder: 'events', altText: title });
       setGallery((g) => [
         ...g,
-        { mediaId: m.id, type: 'IMAGE', altText: form.title || 'Event photo', url: m.url },
+        { mediaId: m.id, type: 'IMAGE', altText: title || 'Event photo', url: m.url },
       ]);
     } catch (err) {
       toast.error(err instanceof AdminApiError ? err.messages[0] : 'Upload failed');
@@ -389,21 +485,20 @@ function EventDialog({
     }
   }
 
-  async function save() {
-    setSaving(true);
+  const onSubmit = handleSubmit(async (values) => {
     setErrors([]);
     try {
       const body = {
-        title: form.title.trim(),
-        category: form.category.trim(),
-        summary: form.summary.trim(),
-        description: form.description.trim() || undefined,
-        eventDate: form.eventDate,
-        startTime: form.startTime || null,
-        endTime: form.endTime || null,
-        guestsLabel: form.guestsLabel.trim() || null,
+        title: values.title.trim(),
+        category: values.category.trim(),
+        summary: values.summary.trim(),
+        description: values.description?.trim() || undefined,
+        eventDate: values.eventDate,
+        startTime: values.startTime || null,
+        endTime: values.endTime || null,
+        guestsLabel: values.guestsLabel?.trim() || null,
         coverMediaId,
-        lifecycle: form.lifecycle,
+        lifecycle: values.lifecycle,
         media: gallery.map((m, i) => ({
           ...(m.id ? { id: m.id } : {}),
           mediaId: m.mediaId,
@@ -419,62 +514,182 @@ function EventDialog({
     } catch (err) {
       if (err instanceof AdminApiError) setErrors(err.messages);
       else toast.error('Could not save');
-    } finally {
-      setSaving(false);
     }
-  }
+  }, (formErrors) => {
+    const messages = flattenFormErrors(formErrors as Record<string, unknown>);
+    setErrors(messages.length > 0 ? messages : ['Please check the highlighted fields.']);
+    toast.error(messages[0] ?? 'Please check the highlighted fields.');
+  });
 
-  const canSave =
-    form.title.trim().length >= 2 &&
-    form.category.trim().length >= 2 &&
-    form.summary.trim().length >= 2 &&
-    form.eventDate.length === 10;
+  const saving = isSubmitting;
 
   return (
-    <Dialog open onClose={saving || uploading ? undefined : onClose} maxWidth="md" fullWidth>
+    <Dialog open onClose={saving || uploading ? undefined : onClose} maxWidth="lg" fullWidth>
       <DialogHeader icon={CalendarMonthRoundedIcon} title={eventId ? 'Edit event' : 'New event'} onClose={saving || uploading ? undefined : onClose} />
       <DialogContent dividers>
         {!loaded ? (
           <Typography color="text.secondary">Loading…</Typography>
         ) : (
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 300px' }, gap: 3 }}>
           <Stack spacing={2}>
             {errors.map((m, i) => (
               <Typography key={i} variant="caption" color="error">{m}</Typography>
             ))}
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="Title" value={form.title} onChange={(e) => set('title', e.target.value)} size="small" fullWidth />
-              <TextField label="Category" value={form.category} onChange={(e) => set('category', e.target.value)} size="small" fullWidth placeholder="Celebration" />
+              <Controller
+                name="title"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    label="Title"
+                    size="small"
+                    fullWidth
+                    slotProps={{ htmlInput: { maxLength: EVENT_LIMITS.title } }}
+                    error={Boolean(fieldState.error)}
+                    helperText={fieldState.error?.message ?? `${field.value.length}/${EVENT_LIMITS.title}`}
+                  />
+                )}
+              />
+              <Controller
+                name="category"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Autocomplete
+                    freeSolo
+                    options={EVENT_CATEGORIES}
+                    value={field.value}
+                    onInputChange={(_, v) => field.onChange(v)}
+                    fullWidth
+                    size="small"
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Category"
+                        placeholder="Celebration"
+                        slotProps={{
+                          ...params.slotProps,
+                          htmlInput: { ...params.slotProps.htmlInput, maxLength: EVENT_LIMITS.category },
+                        }}
+                        error={Boolean(fieldState.error)}
+                        helperText={fieldState.error?.message}
+                      />
+                    )}
+                  />
+                )}
+              />
             </Stack>
-            <TextField label="Summary" value={form.summary} onChange={(e) => set('summary', e.target.value)} size="small" fullWidth multiline minRows={2} />
-            <TextField label="Description (optional)" value={form.description} onChange={(e) => set('description', e.target.value)} size="small" fullWidth multiline minRows={3} />
+            <Controller
+              name="summary"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="Summary"
+                  size="small"
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  slotProps={{ htmlInput: { maxLength: EVENT_LIMITS.summary } }}
+                  error={Boolean(fieldState.error)}
+                  helperText={fieldState.error?.message ?? `${field.value.length}/${EVENT_LIMITS.summary}`}
+                />
+              )}
+            />
+            <Controller
+              name="description"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="Description (optional)"
+                  size="small"
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  slotProps={{ htmlInput: { maxLength: EVENT_LIMITS.description } }}
+                  error={Boolean(fieldState.error)}
+                  helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/${EVENT_LIMITS.description}`}
+                />
+              )}
+            />
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                type="date"
-                label="Event date"
-                value={form.eventDate}
-                onChange={(e) => set('eventDate', e.target.value)}
-                size="small"
-                slotProps={{ inputLabel: { shrink: true } }}
+              <Controller
+                name="eventDate"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    type="date"
+                    label="Event date"
+                    size="small"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    error={Boolean(fieldState.error)}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
               />
-              <TextField type="time" label="Start" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} size="small" slotProps={{ inputLabel: { shrink: true } }} />
-              <TextField type="time" label="End" value={form.endTime} onChange={(e) => set('endTime', e.target.value)} size="small" slotProps={{ inputLabel: { shrink: true } }} />
+              <Controller
+                name="startTime"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    type="time"
+                    label="Start"
+                    size="small"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    error={Boolean(fieldState.error)}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
+              />
+              <Controller
+                name="endTime"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    type="time"
+                    label="End"
+                    size="small"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    error={Boolean(fieldState.error)}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
+              />
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="Guests label" value={form.guestsLabel} onChange={(e) => set('guestsLabel', e.target.value)} size="small" fullWidth placeholder="Family & friends" />
-              <TextField
-                select
-                label="Lifecycle"
-                value={form.lifecycle}
-                onChange={(e) => set('lifecycle', e.target.value as EventLifecycle)}
-                size="small"
-                fullWidth
-              >
-                {LIFECYCLES.map((l) => (
-                  <MenuItem key={l} value={l}>{l}</MenuItem>
-                ))}
-              </TextField>
+              <Controller
+                name="guestsLabel"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    label="Guests label"
+                    size="small"
+                    fullWidth
+                    placeholder="Family & friends"
+                    slotProps={{ htmlInput: { maxLength: EVENT_LIMITS.guestsLabel } }}
+                    error={Boolean(fieldState.error)}
+                    helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/${EVENT_LIMITS.guestsLabel}`}
+                  />
+                )}
+              />
+              <Controller
+                name="lifecycle"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} select label="Lifecycle" size="small" fullWidth>
+                    {LIFECYCLES.map((l) => (
+                      <MenuItem key={l} value={l}>{l}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
             </Stack>
 
             <Divider textAlign="left">
@@ -494,7 +709,9 @@ function EventDialog({
             </Stack>
 
             <Divider textAlign="left">
-              <Typography variant="caption">Photo gallery ({gallery.length})</Typography>
+              <Typography variant="caption">
+                Photo gallery ({gallery.length}/{MAX_GALLERY_PHOTOS})
+              </Typography>
             </Divider>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 1 }}>
               {gallery.map((m, i) => (
@@ -510,23 +727,42 @@ function EventDialog({
                   </IconButton>
                 </Box>
               ))}
-              <Button
-                component="label"
-                variant="outlined"
-                disabled={uploading}
-                sx={{ aspectRatio: '4/3', flexDirection: 'column' }}
-              >
-                <AddRoundedIcon />
-                <Typography variant="caption">{uploading ? 'Uploading…' : 'Add photo'}</Typography>
-                <input type="file" hidden accept={ACCEPTED_IMAGE_TYPES} onChange={(e) => addGalleryImage(e.target.files?.[0])} />
-              </Button>
+              {gallery.length < MAX_GALLERY_PHOTOS && (
+                <Button
+                  component="label"
+                  variant="outlined"
+                  disabled={uploading}
+                  sx={{ aspectRatio: '4/3', flexDirection: 'column' }}
+                >
+                  <AddRoundedIcon />
+                  <Typography variant="caption">{uploading ? 'Uploading…' : 'Add photo'}</Typography>
+                  <input type="file" hidden accept={ACCEPTED_IMAGE_TYPES} onChange={(e) => addGalleryImage(e.target.files?.[0])} />
+                </Button>
+              )}
             </Box>
           </Stack>
+
+          <Box>
+            <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              Website preview
+            </Typography>
+            <EventPreviewCard
+              title={title}
+              category={category}
+              dateLabel={eventDate ? fmtDate(eventDate) : ''}
+              guestsLabel={guestsLabel ?? ''}
+              coverUrl={coverUrl}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              This is how the event card will look on the Events page.
+            </Typography>
+          </Box>
+          </Box>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={saving || uploading}>Cancel</Button>
-        <Button variant="contained" onClick={save} disabled={!loaded || saving || uploading || !canSave}>
+        <Button variant="contained" onClick={onSubmit} disabled={!loaded || saving || uploading}>
           {saving ? 'Saving…' : 'Save event'}
         </Button>
       </DialogActions>

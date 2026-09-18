@@ -3,6 +3,30 @@ import sharp from 'sharp';
 
 export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8 MB
 
+/**
+ * Cheap, early multer `fileFilter`: rejects an obviously-non-image upload
+ * before its body is even buffered into memory. This is NOT the real
+ * security check — the client-supplied mimetype can lie — `validateImage()`
+ * below (which decodes the actual file header via sharp) still runs after
+ * upload and is what's actually trusted.
+ */
+export function multerImageFilter(
+  _req: unknown,
+  file: { mimetype?: string },
+  callback: (error: Error | null, acceptFile: boolean) => void,
+) {
+  if (!file.mimetype?.startsWith('image/')) {
+    callback(
+      new BadRequestException(
+        'Only image uploads are allowed (JPEG, PNG, WebP, AVIF, GIF).',
+      ),
+      false,
+    );
+    return;
+  }
+  callback(null, true);
+}
+
 const ALLOWED: Record<string, { mime: string; ext: string }> = {
   jpeg: { mime: 'image/jpeg', ext: 'jpg' },
   jpg: { mime: 'image/jpeg', ext: 'jpg' },

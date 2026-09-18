@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import type { DietaryType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface PublicMenuVariant {
@@ -13,9 +13,11 @@ export interface PublicMenuItem {
   name: string;
   description: string | null;
   price: number | null;
-  priceLabel: string | null;
   imageUrl: string | null;
   tags: string[];
+  ingredients: string[];
+  dietary: DietaryType | null;
+  isAvailable: boolean;
   isFeatured: boolean;
   variants: PublicMenuVariant[];
 }
@@ -91,8 +93,10 @@ type ItemRow = {
   name: string;
   description: string | null;
   price: Prisma.Decimal | null;
-  priceLabel: string | null;
   tags: string[];
+  ingredients: string[];
+  dietary: DietaryType | null;
+  isAvailable: boolean;
   isFeatured: boolean;
   media: { url: string; deletedAt: Date | null } | null;
   variants: { label: string; price: Prisma.Decimal }[];
@@ -106,9 +110,11 @@ function toPublicItem(row: ItemRow): PublicMenuItem & { categoryName?: string } 
     name: row.name,
     description: row.description,
     price: row.price == null ? null : Number(row.price),
-    priceLabel: row.priceLabel,
     imageUrl: row.media && !row.media.deletedAt ? row.media.url : null,
     tags: row.tags,
+    ingredients: row.ingredients,
+    dietary: row.dietary,
+    isAvailable: row.isAvailable,
     isFeatured: row.isFeatured,
     variants: row.variants.map((v) => ({
       name: v.label,

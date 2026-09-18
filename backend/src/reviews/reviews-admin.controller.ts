@@ -16,7 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types';
 import { auditContext } from '../common/request-context';
 import { ReviewsService } from './reviews.service';
-import { AdminCreateReviewDto, ReviewQueryDto } from './dto';
+import { AdminCreateReviewDto, ReplyToReviewDto, ReviewQueryDto } from './dto';
 
 @Controller('admin/reviews')
 export class ReviewsAdminController {
@@ -108,6 +108,18 @@ export class ReviewsAdminController {
     @Req() req: Request,
   ) {
     return this.reviews.setFeatured(id, false, auditContext(req, actor));
+  }
+
+  @RequirePermissions('reviews.moderate')
+  @Post(':id/reply')
+  @HttpCode(200)
+  reply(
+    @Param('id') id: string,
+    @Body() dto: ReplyToReviewDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    return this.reviews.reply(id, dto, auditContext(req, actor));
   }
 
   @RequirePermissions('reviews.moderate')

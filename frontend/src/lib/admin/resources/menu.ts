@@ -5,8 +5,22 @@ export const MENU_PATH = '/admin/menu';
 
 export type MenuGroup = 'FOOD' | 'BEVERAGES' | 'BAR';
 export type PublishStatus = 'DRAFT' | 'PUBLISHED';
+export type DietaryType = 'VEG' | 'NON_VEG' | 'EGG';
 
 export const MENU_GROUPS: MenuGroup[] = ['FOOD', 'BEVERAGES', 'BAR'];
+
+export type DietaryOption = {
+  value: DietaryType;
+  label: string;
+  color: 'success' | 'warning' | 'error';
+  shape: 'dot' | 'triangle';
+};
+
+export const DIETARY_TYPES: DietaryOption[] = [
+  { value: 'VEG', label: 'Veg', color: 'success', shape: 'dot' },
+  { value: 'NON_VEG', label: 'Non-veg', color: 'error', shape: 'triangle' },
+  { value: 'EGG', label: 'Egg', color: 'warning', shape: 'dot' },
+];
 
 export type MenuCategory = {
   id: string;
@@ -33,12 +47,15 @@ export type MenuItem = {
   slug: string;
   description: string | null;
   price: number | null;
-  priceLabel: string | null;
-  mediaId: string | null;
+  mediaId: string;
+  media: { id: string; url: string } | null;
+  dietary: DietaryType | null;
   status: PublishStatus;
+  isAvailable: boolean;
   isFeatured: boolean;
   sortOrder: number;
   tags: string[];
+  ingredients: string[];
   category: { id: string; name: string; group: MenuGroup };
   variants: MenuVariant[];
 };
@@ -54,9 +71,12 @@ export type ItemInput = {
   name: string;
   description?: string;
   price?: number | null;
-  priceLabel?: string | null;
+  mediaId: string;
+  dietary?: DietaryType | null;
+  isAvailable?: boolean;
   isFeatured?: boolean;
   tags?: string[];
+  ingredients?: string[];
   variants?: MenuVariant[];
 };
 
@@ -86,12 +106,11 @@ export const menuApi = {
   deleteItem: (id: string) => adminApi.delete(`${MENU_PATH}/items/${id}`),
 };
 
-export function formatPrice(item: Pick<MenuItem, 'price' | 'priceLabel' | 'variants'>) {
+export function formatPrice(item: Pick<MenuItem, 'price' | 'variants'>) {
   if (item.variants.length > 0) {
     const prices = item.variants.map((v) => v.price).sort((a, b) => a - b);
     return `Rs ${prices[0]}${prices.length > 1 ? `–${prices[prices.length - 1]}` : ''}`;
   }
-  if (item.priceLabel) return item.priceLabel;
   if (item.price != null) return `Rs ${item.price}`;
   return '—';
 }

@@ -16,6 +16,7 @@ import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 
 import FeatureIcon from '@/components/common/feature-icon';
 import { getAboutValues } from '@/data/marketing';
+import { getPageHeaders } from '@/lib/api/page-headers';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -34,7 +35,9 @@ export const metadata: Metadata = {
 
 const values = getAboutValues();
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { about: hero } = await getPageHeaders();
+
   return (
     <Box
       component="main"
@@ -65,8 +68,8 @@ export default function AboutPage() {
             }}
           >
             <Image
-              src="/images/home/harmony-dining-experience.jpg"
-              alt="The dining room at Harmony Dining & Event Center"
+              src={hero?.image ?? '/images/home/harmony-dining-experience.jpg'}
+              alt={hero?.imageAlt ?? 'The dining room at Harmony Dining & Event Center'}
               fill
               priority
               quality={80}
@@ -100,7 +103,7 @@ export default function AboutPage() {
                   variant="overline"
                   sx={{ color: 'secondary.light' }}
                 >
-                  Our Story
+                  {hero?.eyebrow ?? 'Our Story'}
                 </Typography>
 
                 <Typography
@@ -112,7 +115,7 @@ export default function AboutPage() {
                     color: 'primary.contrastText',
                   }}
                 >
-                  Made for gathering.
+                  {hero?.title ?? 'Made for gathering.'}
                 </Typography>
 
                 <Typography
@@ -124,9 +127,8 @@ export default function AboutPage() {
                     opacity: 0.8,
                   }}
                 >
-                  Harmony Dining &amp; Event Center began with a simple
-                  idea: a single place where good food, warm service
-                  and space to celebrate come together.
+                  {hero?.description ??
+                    'Harmony Dining & Event Center began with a simple idea: a single place where good food, warm service and space to celebrate come together.'}
                 </Typography>
               </Box>
             </Box>

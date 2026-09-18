@@ -37,6 +37,7 @@ import {
 
 import {
   getSocialLinks,
+  type SiteContact,
   type SocialLink,
   type SocialPlatform,
 } from '@/data/site';
@@ -124,6 +125,8 @@ type FooterProps = {
   content?: FooterContent;
   /** Social links from Site Settings. Falls back to the bundled local list. */
   social?: SocialLink[];
+  /** Address/hours from Site Settings — overrides the bundled defaults below. */
+  contact?: SiteContact;
 };
 
 /* =========================================================
@@ -380,6 +383,7 @@ function getFooterLinkIcon(
 export default function Footer({
   content = initialFooterContent,
   social,
+  contact,
 }: FooterProps) {
   if (content.enabled === false) {
     return null;
@@ -388,6 +392,25 @@ export default function Footer({
   const socialLinks = toIconLinks(
     social && social.length > 0 ? social : getSocialLinks(),
   );
+
+  // Site Settings is the source of truth for address/hours when available,
+  // so the footer never contradicts the contact page.
+  const visitLocation =
+    contact?.addressLines && contact.addressLines.length > 0
+      ? {
+          ...content.visit?.location,
+          primary: contact.addressLines.join(', '),
+          href: contact.mapHref || content.visit?.location?.href,
+        }
+      : content.visit?.location;
+
+  const visitHours =
+    contact?.hours && contact.hours.length > 0
+      ? {
+          ...content.visit?.hours,
+          primary: `${contact.hours[0].label}: ${contact.hours[0].value}`,
+        }
+      : content.visit?.hours;
 
   const topActions = (
     content.topCta?.actions ?? []
@@ -1211,19 +1234,16 @@ export default function Footer({
             >
               {/* LOCATION */}
 
-              {content.visit
-                ?.location
+              {visitLocation
                 ?.enabled !==
                 false &&
                 Boolean(
-                  content.visit
-                    ?.location
+                  visitLocation
                     ?.primary,
                 ) && (
                   <Link
                     href={
-                      content.visit
-                        ?.location
+                      visitLocation
                         ?.href ??
                       '/#location'
                     }
@@ -1300,9 +1320,7 @@ export default function Footer({
                           }}
                         >
                           {
-                            content
-                              .visit
-                              ?.location
+                            visitLocation
                               ?.primary
                           }
                         </Typography>
@@ -1326,99 +1344,112 @@ export default function Footer({
 
               {/* HOURS */}
 
-              {content.visit
-                ?.hours?.enabled !==
+              {visitHours
+                ?.enabled !==
                 false &&
                 Boolean(
-                  content.visit
-                    ?.hours
+                  visitHours
                     ?.primary,
                 ) && (
-                  <Box
-                    sx={{
-                      display:
-                        'flex',
+                  <Link
+                    href={
+                      content.visit
+                        ?.contact
+                        ?.href ??
+                      '/contact'
+                    }
+                    style={{
+                      color:
+                        'inherit',
 
-                      gap: 0.75,
-
-                      alignItems:
-                        'center',
-
-                      minWidth: 0,
+                      textDecoration:
+                        'none',
                     }}
                   >
                     <Box
-                      aria-hidden
                       sx={{
-                        width: 34,
-                        height: 34,
-
-                        flexShrink:
-                          0,
-
                         display:
-                          'grid',
+                          'flex',
 
-                        placeItems:
+                        gap: 0.75,
+
+                        alignItems:
                           'center',
 
-                        borderRadius:
-                          '50%',
-
-                        bgcolor:
-                          'action.hover',
-
-                        color:
-                          'secondary.dark',
-                      }}
-                    >
-                      <AccessTimeRoundedIcon
-                        sx={{
-                          fontSize: 18,
-                        }}
-                      />
-                    </Box>
-
-                    <Box
-                      sx={{
                         minWidth: 0,
                       }}
                     >
-                      <Typography
-                        variant="caption"
+                      <Box
+                        aria-hidden
                         sx={{
+                          width: 34,
+                          height: 34,
+
+                          flexShrink:
+                            0,
+
                           display:
-                            'block',
+                            'grid',
+
+                          placeItems:
+                            'center',
+
+                          borderRadius:
+                            '50%',
+
+                          bgcolor:
+                            'action.hover',
 
                           color:
-                            'text.primary',
-
-                          fontWeight:
-                            700,
+                            'secondary.dark',
                         }}
                       >
-                        {
-                          content
-                            .visit
-                            ?.hours
-                            ?.primary
-                        }
-                      </Typography>
+                        <AccessTimeRoundedIcon
+                          sx={{
+                            fontSize: 18,
+                          }}
+                        />
+                      </Box>
 
-                      <Typography
-                        variant="caption"
+                      <Box
                         sx={{
-                          display:
-                            'block',
-
-                          color:
-                            'text.secondary',
+                          minWidth: 0,
                         }}
                       >
-                        Contact us
-                      </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display:
+                              'block',
+
+                            color:
+                              'text.primary',
+
+                            fontWeight:
+                              700,
+                          }}
+                        >
+                          {
+                            visitHours
+                              ?.primary
+                          }
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display:
+                              'block',
+
+                            color:
+                              'text.secondary',
+                          }}
+                        >
+                          Contact us
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
+                  </Link>
                 )}
             </Box>
 

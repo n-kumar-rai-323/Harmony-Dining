@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import {
   Box,
+  Button,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -16,14 +17,16 @@ import {
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 import { FilterBar, PageHeader, QueryBoundary } from '@/components/admin/ui';
-import { DataTable, type Column } from '@/components/admin/data-table';
 import { useAdminList } from '@/lib/admin/use-admin-list';
 import { useAdminQuery } from '@/lib/admin/use-admin-query';
+import { adminApi } from '@/lib/admin/api';
 import {
   AUDIT_PATH,
   type AuditEntry,
   type AuditFacets,
 } from '@/lib/admin/resources/audit';
+import { USERS_PATH, type AdminUserRow } from '@/lib/admin/resources/users';
+import { actionMeta, describeChange, sectionLabel, toneBg, toneColor } from '@/lib/admin/audit-format';
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString();
@@ -40,89 +43,56 @@ export default function AdminAuditPage() {
     useAdminList<AuditEntry>(AUDIT_PATH, { pageSize: 50 });
   const facets = useAdminQuery<AuditFacets>(`${AUDIT_PATH}/facets`);
 
-  const [searchInput, setSearchInput] = useState('');
-  const [actorInput, setActorInput] = useState('');
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
   useEffect(() => {
-    const t = setTimeout(() => {
-      setParam('search', searchInput.trim() || undefined);
-      setParam('actorEmail', actorInput.trim() || undefined);
-    }, 400);
+    let cancelled = false;
+    adminApi
+      .get<{ items: AdminUserRow[] }>(`${USERS_PATH}?pageSize=100`)
+      .then((res) => {
+        if (!cancelled) setUsers(res.items);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [searchInput, setSearchInput] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setParam('search', searchInput.trim() || undefined), 400);
     return () => clearTimeout(t);
-  }, [searchInput, actorInput, setParam]);
+  }, [searchInput, setParam]);
 
   const [detailId, setDetailId] = useState<string | null>(null);
 
-  const columns: Column<AuditEntry>[] = [
-    {
-      key: 'time',
-      header: 'When',
-      width: 170,
-      render: (r) => (
-        <Typography variant="caption" color="text.secondary">
-          {fmt(r.createdAt)}
-        </Typography>
-      ),
-    },
-    {
-      key: 'actor',
-      header: 'Actor',
-      width: 200,
-      render: (r) => (
-        <Box>
-          <Typography variant="body2">{r.actor?.name ?? '—'}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {r.actorEmail ?? 'system'}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      key: 'action',
-      header: 'Action',
-      render: (r) => (
-        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-          {r.action}
-        </Typography>
-      ),
-    },
-    {
-      key: 'entity',
-      header: 'Entity',
-      render: (r) => (
-        <Box>
-          <Typography variant="body2">{r.entityType}</Typography>
-          {r.entityId && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-              {r.entityId}
-            </Typography>
-          )}
-        </Box>
-      ),
-    },
-    {
-      key: 'ip',
-      header: 'IP',
-      width: 120,
-      render: (r) => (
-        <Typography variant="caption" color="text.secondary">
-          {prettyIp(r.ip)}
-        </Typography>
-      ),
-    },
-  ];
-
   return (
     <Box>
-      <PageHeader title="Audit log" subtitle="Every change made through the admin API." />
+      <PageHeader
+        title="Audit log"
+        subtitle="Every change made in this admin panel, who made it and when."
+      />
 
       <FilterBar>
+        <TextField
+          select
+          size="small"
+          label="User"
+          value={(params.actorId as string) ?? ''}
+          onChange={(e) => setParam('actorId', e.target.value || undefined)}
+          sx={{ minWidth: 170 }}
+        >
+          <MenuItem value="">All</MenuItem>
+          {users.map((u) => (
+            <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+          ))}
+        </TextField>
         <TextField
           select
           size="small"
           label="Action"
           value={(params.action as string) ?? ''}
           onChange={(e) => setParam('action', e.target.value || undefined)}
-          sx={{ minWidth: 200 }}
+          sx={{ minWidth: 170 }}
         >
           <MenuItem value="">All</MenuItem>
           {(facets.data?.actions ?? []).map((a) => (
@@ -134,7 +104,7 @@ export default function AdminAuditPage() {
         <TextField
           select
           size="small"
-          label="Entity type"
+          label="Section"
           value={(params.entityType as string) ?? ''}
           onChange={(e) => setParam('entityType', e.target.value || undefined)}
           sx={{ minWidth: 170 }}
@@ -142,17 +112,10 @@ export default function AdminAuditPage() {
           <MenuItem value="">All</MenuItem>
           {(facets.data?.entityTypes ?? []).map((a) => (
             <MenuItem key={a.value} value={a.value}>
-              {a.value} ({a.count})
+              {sectionLabel(a.value)} ({a.count})
             </MenuItem>
           ))}
         </TextField>
-        <TextField
-          size="small"
-          label="Actor email"
-          value={actorInput}
-          onChange={(e) => setActorInput(e.target.value)}
-          sx={{ minWidth: 200 }}
-        />
         <TextField
           type="datetime-local"
           size="small"
@@ -180,24 +143,98 @@ export default function AdminAuditPage() {
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{ flexGrow: 1, minWidth: 160 }}
         />
-</FilterBar>
+      </FilterBar>
 
       <QueryBoundary loading={loading && !data} error={error} onRetry={reload}>
-        <DataTable
-          columns={columns}
-          rows={data?.items ?? []}
-          getRowKey={(r) => r.id}
-          loading={loading}
-          emptyText="No audit entries match these filters."
-          onRowClick={(r) => setDetailId(r.id)}
-          pagination={{
-            page: data?.page ?? 1,
-            pageSize: data?.pageSize ?? 50,
-            total: data?.total ?? 0,
-            onPageChange: (p) => setParam('page', p),
-            onPageSizeChange: (s) => setParam('pageSize', s),
-          }}
-        />
+        {data && data.items.length === 0 && (
+          <Typography color="text.secondary" sx={{ py: 6, textAlign: 'center' }}>
+            No audit entries match these filters.
+          </Typography>
+        )}
+
+        <Box>
+          {(data?.items ?? []).map((entry) => {
+            const meta = actionMeta(entry.action);
+            const Icon = meta.icon;
+            return (
+              <Stack
+                key={entry.id}
+                direction="row"
+                spacing={1.5}
+                onClick={() => setDetailId(entry.id)}
+                sx={{
+                  py: 1.5,
+                  alignItems: 'flex-start',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flexShrink: 0,
+                    color: toneColor(meta.tone),
+                    bgcolor: toneBg(meta.tone),
+                  }}
+                >
+                  <Icon fontSize="small" />
+                </Box>
+                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                  <Typography variant="body2">
+                    <Box component="span" sx={{ fontWeight: 700 }}>
+                      {entry.actor?.name ?? entry.actorEmail ?? 'System'}
+                    </Box>{' '}
+                    <Box component="span" sx={{ color: toneColor(meta.tone), fontWeight: 600 }}>
+                      {meta.label}
+                    </Box>{' '}
+                    in{' '}
+                    <Box component="span" sx={{ fontWeight: 700 }}>
+                      {sectionLabel(entry.entityType)}
+                    </Box>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" noWrap>
+                    {describeChange(entry)}
+                  </Typography>
+                </Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ flexShrink: 0, whiteSpace: 'nowrap', pt: 0.25 }}
+                >
+                  {fmt(entry.createdAt)}
+                </Typography>
+              </Stack>
+            );
+          })}
+        </Box>
+
+        {data && data.pageCount > 1 && (
+          <Stack direction="row" spacing={1} sx={{ justifyContent: 'center', alignItems: 'center', mt: 3 }}>
+            <Button
+              size="small"
+              disabled={data.page <= 1}
+              onClick={() => setParam('page', data.page - 1)}
+            >
+              Previous
+            </Button>
+            <Typography variant="body2" color="text.secondary">
+              Page {data.page} / {data.pageCount}
+            </Typography>
+            <Button
+              size="small"
+              disabled={data.page >= data.pageCount}
+              onClick={() => setParam('page', data.page + 1)}
+            >
+              Next
+            </Button>
+          </Stack>
+        )}
       </QueryBoundary>
 
       <Dialog

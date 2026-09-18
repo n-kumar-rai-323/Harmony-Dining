@@ -144,10 +144,6 @@ function findVerifiedMenuEntry(
 function formatMenuPrice(
   item: MenuItem,
 ) {
-  if (item.priceLabel) {
-    return item.priceLabel;
-  }
-
   if (
     typeof item.price === 'number'
   ) {

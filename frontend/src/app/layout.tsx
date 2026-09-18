@@ -148,7 +148,9 @@ export default async function RootLayout({
         <ThemeInitScript />
 
         <ThemeRegistry>
-          <SiteChrome social={social}>{children}</SiteChrome>
+          <SiteChrome social={social} contact={settings.contact}>
+            {children}
+          </SiteChrome>
         </ThemeRegistry>
       </body>
     </html>

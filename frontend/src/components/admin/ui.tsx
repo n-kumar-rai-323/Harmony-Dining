@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -17,6 +18,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import type { ChipProps } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { SvgIconComponent } from '@mui/icons-material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
@@ -36,7 +38,7 @@ export function FilterBar({ children }: { children: React.ReactNode }) {
         flexWrap: 'wrap',
         gap: 1.25,
         alignItems: 'center',
-        bgcolor: (t) => alpha(t.palette.action.hover, 0.5),
+        bgcolor: 'action.hover',
       }}
     >
       {children}
@@ -117,6 +119,154 @@ export function FormSection({
   );
 }
 
+type StatColor = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+
+/** One labelled fact in a detail dialog — an icon tile plus label/value,
+ * used instead of a bare label-over-text pair so a record detail reads
+ * like a small form rather than a list of dashes. */
+export function DetailField({
+  icon: Icon,
+  label,
+  value,
+  color = 'primary',
+  span,
+}: {
+  icon?: SvgIconComponent;
+  label: string;
+  value: React.ReactNode;
+  color?: StatColor;
+  /** Stretch across the full grid width (e.g. a free-text field). */
+  span?: boolean;
+}) {
+  return (
+    <Box
+      sx={{
+        gridColumn: span ? '1 / -1' : undefined,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 1.25,
+        p: 1.25,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+      }}
+    >
+      {Icon && (
+        <Box
+          sx={{
+            display: 'grid',
+            placeItems: 'center',
+            width: 30,
+            height: 30,
+            borderRadius: 1.5,
+            flexShrink: 0,
+            color: `${color}.main`,
+            bgcolor: (t) => alpha(t.palette[color].main, 0.12),
+          }}
+        >
+          <Icon sx={{ fontSize: 16 }} />
+        </Box>
+      )}
+      <Box sx={{ minWidth: 0 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: 'block', lineHeight: 1.3 }}
+        >
+          {label}
+        </Typography>
+        <Typography
+          variant="body2"
+          component="div"
+          sx={{ fontWeight: 600, mt: 0.2, overflowWrap: 'anywhere' }}
+        >
+          {value}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+export type HistoryEntry = {
+  id: string;
+  fromStatus?: string | null;
+  toStatus: string;
+  createdAt: string;
+  changedByName?: string | null;
+  note?: string | null;
+};
+
+/** A connected-dot timeline for a record's status history, replacing a
+ * plain stacked list of "FROM → TO" lines with something scannable. */
+export function HistoryTimeline({
+  entries,
+  statusColor,
+  formatWhen,
+}: {
+  entries: HistoryEntry[];
+  statusColor: (status: string) => ChipProps['color'];
+  formatWhen: (iso: string) => string;
+}) {
+  return (
+    <Stack spacing={0}>
+      {entries.map((h, i) => {
+        const isLast = i === entries.length - 1;
+        return (
+          <Box key={h.id} sx={{ display: 'flex', gap: 1.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: 20,
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  mt: 0.6,
+                  borderRadius: '50%',
+                  flexShrink: 0,
+                  bgcolor: `${statusColor(h.toStatus) ?? 'primary'}.main`,
+                }}
+              />
+              {!isLast && (
+                <Box sx={{ width: '2px', flexGrow: 1, my: 0.4, bgcolor: 'divider' }} />
+              )}
+            </Box>
+            <Box sx={{ pb: isLast ? 0 : 1.75, minWidth: 0 }}>
+              <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                {h.fromStatus && (
+                  <Typography variant="caption" color="text.secondary">
+                    {h.fromStatus} →
+                  </Typography>
+                )}
+                <Chip
+                  size="small"
+                  label={h.toStatus}
+                  color={statusColor(h.toStatus)}
+                  sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }}
+                />
+              </Stack>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.4 }}>
+                {formatWhen(h.createdAt)} · {h.changedByName ?? 'Website'}
+              </Typography>
+              {h.note && (
+                <Typography variant="body2" sx={{ mt: 0.4, overflowWrap: 'anywhere' }}>
+                  {h.note}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+}
+
 export function PageHeader({
   title,
   subtitle,
@@ -173,8 +323,6 @@ export function PageHeader({
     </Stack>
   );
 }
-
-type StatColor = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 
 export function StatCard({
   label,

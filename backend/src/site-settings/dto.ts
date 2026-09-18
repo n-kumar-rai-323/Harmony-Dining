@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsEmail,
   IsIn,
   IsNumber,
   IsOptional,
@@ -11,6 +12,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -30,6 +32,8 @@ export const SOCIAL_PLATFORMS = [
 
 const HREF_RE = /^https?:\/\/.+/i;
 const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+// Loose international phone format: optional leading +, 7-20 digits/spaces/-/().
+const PHONE_RE = /^\+?[0-9()][0-9()\s-]{6,19}$/;
 
 export class BusinessDto {
   @IsString()
@@ -39,10 +43,15 @@ export class BusinessDto {
 
   @IsString()
   @MaxLength(40)
+  // Blank is allowed (phone not set yet); once non-empty it must look real.
+  @ValidateIf((o: BusinessDto) => o.phone !== '')
+  @Matches(PHONE_RE, { message: 'phone must be a valid phone number' })
   phone!: string;
 
   @IsString()
   @MaxLength(160)
+  @ValidateIf((o: BusinessDto) => o.email !== '')
+  @IsEmail({}, { message: 'email must be a valid email address' })
   email!: string;
 
   @IsArray()

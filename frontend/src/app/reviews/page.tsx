@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
 import ReviewsExperience from '@/components/reviews/reviews-experience';
-import { getPublishedReviews } from '@/lib/api/reviews';
+import { getPublishedReviews, getReviewStats } from '@/lib/api/reviews';
+import { getPageHeaders } from '@/lib/api/page-headers';
 
 export const metadata: Metadata = {
   title: 'Reviews',
@@ -19,6 +20,16 @@ export const metadata: Metadata = {
 };
 
 export default async function ReviewsPage() {
-  const initial = await getPublishedReviews(1, 12);
-  return <ReviewsExperience initial={initial} />;
+  const [initial, stats, { reviews: hero }] = await Promise.all([
+    getPublishedReviews(1, 12),
+    getReviewStats(),
+    getPageHeaders(),
+  ]);
+  return (
+    <ReviewsExperience
+      initial={initial}
+      initialStats={stats}
+      hero={hero ?? undefined}
+    />
+  );
 }

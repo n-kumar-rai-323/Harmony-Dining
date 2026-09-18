@@ -14,6 +14,7 @@ import {
   alpha,
   Box,
   Button,
+  Chip,
   Container,
   IconButton,
   InputAdornment,
@@ -47,10 +48,12 @@ import RedeemRoundedIcon from '@mui/icons-material/RedeemRounded';
 
 import {
   menuData,
+  type DietaryType,
   type MenuCategory,
   type MenuGroup,
   type MenuItem,
 } from '@/data/menu-data';
+import type { PageHeaderContent } from '@/lib/api/page-headers';
 
 type FlatMenuItem = {
   id: string;
@@ -59,6 +62,50 @@ type FlatMenuItem = {
   group: MenuGroup;
   item: MenuItem;
 };
+
+/** The standard veg (green dot) / non-veg (maroon triangle) / egg (amber dot) mark. */
+function DietaryDot({ type }: { type: DietaryType | null | undefined }) {
+  if (!type) return null;
+  const label = type === 'VEG' ? 'Veg' : type === 'EGG' ? 'Egg' : 'Non-veg';
+  return (
+    <Box
+      title={label}
+      aria-label={label}
+      sx={(t) => ({
+        width: 14,
+        height: 14,
+        flexShrink: 0,
+        border: '1.5px solid',
+        borderColor:
+          type === 'VEG' ? t.palette.success.main : type === 'EGG' ? t.palette.warning.main : t.palette.error.dark,
+        borderRadius: '3px',
+        display: 'grid',
+        placeItems: 'center',
+      })}
+    >
+      {type === 'NON_VEG' ? (
+        <Box
+          sx={(t) => ({
+            width: 0,
+            height: 0,
+            borderLeft: '4px solid transparent',
+            borderRight: '4px solid transparent',
+            borderBottom: `7px solid ${t.palette.error.dark}`,
+          })}
+        />
+      ) : (
+        <Box
+          sx={(t) => ({
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            bgcolor: type === 'VEG' ? t.palette.success.main : t.palette.warning.main,
+          })}
+        />
+      )}
+    </Box>
+  );
+}
 
 const sidebarIcons = [
   RestaurantMenuRoundedIcon,
@@ -147,20 +194,23 @@ type MenuExperienceProps = {
    * Falls back to the bundled static menu when omitted.
    */
   categories?: MenuCategory[];
+  /** Admin-managed hero copy. Falls back to the built-in default when omitted. */
+  hero?: PageHeaderContent;
 };
 
 export default function MenuExperience({
   categories: categoriesProp,
+  hero,
 }: MenuExperienceProps) {
   const theme = useTheme();
 
   const categories =
     useMemo<MenuCategory[]>(
       () =>
-        categoriesProp &&
-        categoriesProp.length > 0
-          ? categoriesProp
-          : getVisibleCategories(),
+        categoriesProp ===
+        undefined
+          ? getVisibleCategories()
+          : categoriesProp,
       [categoriesProp],
     );
 
@@ -965,7 +1015,7 @@ export default function MenuExperience({
                     'secondary.dark',
                 }}
               >
-                Exquisite Flavors
+                {hero?.eyebrow ?? 'Exquisite Flavors'}
               </Typography>
 
               <Typography
@@ -980,9 +1030,9 @@ export default function MenuExperience({
                     'text.primary',
                 }}
               >
-                A Menu for
+                {hero?.title ?? 'A Menu for'}
                 <br />
-                Every Moment
+                {hero?.accentTitle ?? 'Every Moment'}
               </Typography>
 
               <Typography
@@ -997,14 +1047,8 @@ export default function MenuExperience({
                     'text.secondary',
                 }}
               >
-                Fresh ingredients.
-                Thoughtful
-                preparation.
-                Memorable flavours
-                for dining,
-                celebrations and
-                every Harmony
-                moment.
+                {hero?.description ??
+                  'Fresh ingredients. Thoughtful preparation. Memorable flavours for dining, celebrations and every Harmony moment.'}
               </Typography>
 
               <Box
@@ -1025,7 +1069,7 @@ export default function MenuExperience({
                       SpaRoundedIcon,
 
                     text:
-                      'Fresh & Local',
+                      hero?.badges?.[0]?.label ?? 'Fresh & Local',
                   },
 
                   {
@@ -1033,7 +1077,7 @@ export default function MenuExperience({
                       WorkspacePremiumRoundedIcon,
 
                     text:
-                      'Chef Crafted',
+                      hero?.badges?.[1]?.label ?? 'Chef Crafted',
                   },
 
                   {
@@ -1041,7 +1085,7 @@ export default function MenuExperience({
                       HealthAndSafetyRoundedIcon,
 
                     text:
-                      'Quality First',
+                      hero?.badges?.[2]?.label ?? 'Quality First',
                   },
                 ].map(
                   ({
@@ -1102,8 +1146,8 @@ export default function MenuExperience({
               }}
             >
               <Image
-                src="/images/menu/harmony-food-menu-bg.jpg"
-                alt="Harmony dining menu"
+                src={hero?.image ?? '/images/menu/harmony-food-menu-bg.jpg'}
+                alt={hero?.imageAlt ?? 'Harmony dining menu'}
                 fill
                 priority
                 quality={75}
@@ -1571,10 +1615,7 @@ export default function MenuExperience({
                                   ? formatPrice(
                                       price,
                                     )
-                                  : entry
-                                      .item
-                                      .priceLabel ??
-                                    'Ask'}
+                                  : 'Ask'}
                               </Typography>
                             </Button>
                           );
@@ -1977,6 +2018,9 @@ export default function MenuExperience({
                           >
                             <Image
                               src={
+                                entry
+                                  .item
+                                  .imageUrl ??
                                 groupImage[
                                   entry
                                     .group
@@ -1994,8 +2038,45 @@ export default function MenuExperience({
                               style={{
                                 objectFit:
                                   'cover',
+                                filter:
+                                  entry
+                                    .item
+                                    .isAvailable ===
+                                  false
+                                    ? 'grayscale(0.6) brightness(0.85)'
+                                    : undefined,
                               }}
                             />
+
+                            {entry.item
+                              .isAvailable ===
+                              false && (
+                              <Box
+                                sx={{
+                                  position:
+                                    'absolute',
+                                  top: 10,
+                                  left: 10,
+                                  px: 1,
+                                  py: 0.45,
+                                  borderRadius: 999,
+                                  bgcolor:
+                                    'error.dark',
+                                  color: '#fff',
+                                  boxShadow: (t) =>
+                                    t.shadows[3],
+                                }}
+                              >
+                                <Typography
+                                  variant="overline"
+                                  sx={{
+                                    fontWeight: 900,
+                                  }}
+                                >
+                                  Sold out
+                                </Typography>
+                              </Box>
+                            )}
 
                             <Box
                               sx={{
@@ -2082,19 +2163,68 @@ export default function MenuExperience({
                               }
                             </Typography>
 
-                            <Typography
-                              component="h3"
-                              variant="h6"
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
                               sx={{
                                 mt: 0.5,
+                                alignItems: 'center',
                               }}
                             >
-                              {
-                                entry
-                                  .item
-                                  .name
-                              }
-                            </Typography>
+                              <DietaryDot
+                                type={
+                                  entry
+                                    .item
+                                    .dietary
+                                }
+                              />
+                              <Typography
+                                component="h3"
+                                variant="h6"
+                              >
+                                {
+                                  entry
+                                    .item
+                                    .name
+                                }
+                              </Typography>
+                            </Stack>
+
+                            {entry.item.tags &&
+                              entry.item.tags
+                                .length > 0 && (
+                                <Stack
+                                  direction="row"
+                                  spacing={0.5}
+                                  sx={{
+                                    mt: 0.75,
+                                    flexWrap: 'wrap',
+                                    rowGap: 0.5,
+                                  }}
+                                >
+                                  {entry.item.tags
+                                    .slice(0, 4)
+                                    .map((tag) => (
+                                      <Chip
+                                        key={tag}
+                                        label={tag}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{
+                                          height: 20,
+                                          fontSize:
+                                            '0.65rem',
+                                          textTransform:
+                                            'capitalize',
+                                          borderColor:
+                                            'secondary.main',
+                                          color:
+                                            'secondary.dark',
+                                        }}
+                                      />
+                                    ))}
+                                </Stack>
+                              )}
 
                             <Typography
                               variant="overline"
@@ -2137,8 +2267,16 @@ export default function MenuExperience({
                             >
                               {entry
                                 .item
-                                .description ??
-                                'Ingredient details will be available soon.'}
+                                .ingredients &&
+                              entry
+                                .item
+                                .ingredients
+                                .length >
+                                0
+                                ? entry.item.ingredients.join(
+                                    ', ',
+                                  )
+                                : 'Ingredient details will be available soon.'}
                             </Typography>
 
                             <Box
@@ -2174,10 +2312,7 @@ export default function MenuExperience({
                                   ? formatPrice(
                                       price,
                                     )
-                                  : entry
-                                      .item
-                                      .priceLabel ??
-                                    'Ask'}
+                                  : 'Ask'}
                               </Typography>
                             </Box>
                           </Box>

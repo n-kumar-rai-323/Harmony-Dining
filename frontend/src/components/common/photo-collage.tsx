@@ -64,6 +64,7 @@ export default function PhotoCollage({
   const heroPhoto = list[0];
   const gridPhotos = list.slice(1, 5);
   const showMosaic = count >= 3;
+  const showSideColumn = count >= 2;
 
   const tileButtonSx = {
     position: 'relative',
@@ -114,9 +115,11 @@ export default function PhotoCollage({
 
           gridTemplateColumns: {
             xs: '1fr',
-            sm: showMosaic
-              ? '1.35fr 1fr'
-              : '1fr 1fr',
+            sm: !showSideColumn
+              ? '1fr'
+              : showMosaic
+                ? '1.35fr 1fr'
+                : '1fr 1fr',
           },
 
           gridTemplateRows: {

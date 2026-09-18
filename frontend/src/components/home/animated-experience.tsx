@@ -210,8 +210,13 @@ export default function AnimatedExperience({
     1,
   ) * 100}vh`;
 
+  // When there are no valid stories the section renders nothing below (see
+  // the `!activeStory` guard), so `desktopSectionRef` never attaches to a DOM
+  // node. Hooks can't be called conditionally, so instead point useScroll at
+  // nothing in that case — it falls back to window scroll, which is discarded
+  // anyway since the component returns null.
   const { scrollYProgress } = useScroll({
-    target: desktopSectionRef,
+    target: storyCount > 0 ? desktopSectionRef : undefined,
 
     offset: ['start start', 'end end'],
   });
