@@ -27,6 +27,16 @@
   "prisma": {
     "seed": "ts-node --project tsconfig.json prisma/seed.ts"
   },
+  "packageManager": "pnpm@11.25.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "sharp"
+    ]
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.699.0",
     "@aws-sdk/s3-request-presigner": "^3.699.0",

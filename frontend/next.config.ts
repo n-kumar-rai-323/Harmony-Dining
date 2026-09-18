@@ -149,6 +149,10 @@ const nextConfig: NextConfig = {
 
   compress: true,
 
+  // Self-contained server bundle for the production Docker image — copies
+  // only the files `node server.js` actually needs (see frontend/Dockerfile).
+  output: 'standalone',
+
   images: {
     formats: ['image/avif', 'image/webp'],
     // Every `quality` value passed to next/image must be listed here (Next 16).
