@@ -53,6 +53,8 @@ const PERMISSIONS: Record<string, string> = {
   'homepage.manage': 'Edit homepage CMS content',
   'pageHeaders.read': 'View page header (hero/banner) CMS content',
   'pageHeaders.manage': 'Edit page header (hero/banner) CMS content',
+  'sitePromo.read': 'View the site promo popup content',
+  'sitePromo.manage': 'Edit and publish the site promo popup',
   'settings.read': 'View site settings',
   'settings.manage': 'Edit site settings',
   'notifications.read': 'View notifications',

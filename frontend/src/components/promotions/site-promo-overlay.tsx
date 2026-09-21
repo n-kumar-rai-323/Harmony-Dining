@@ -26,42 +26,26 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 /* =========================================================
    TYPES
 
-   HARMONY-REAL
-
-   Future production flow:
-
-   Admin Dashboard
-        ↓
-   NestJS API
-        ↓
-   GET /offers/public/active
-        ↓
-   SitePromoOverlay
-
-   Admin controls content.
-   Frontend controls visual design.
+   Admin Dashboard → NestJS API → GET /api/public/site-promo →
+   SitePromoOverlay. Admin controls content (Admin → Site Promo),
+   this component controls visual design only.
 ========================================================= */
 
 type PromoCta = {
-  id: string;
   label: string;
   href: string;
-  enabled?: boolean;
-  variant?: 'primary' | 'secondary';
 };
 
 export type SitePromoContent = {
   id: string;
 
-  enabled?: boolean;
-
-  startAt?: string | null;
-  endAt?: string | null;
+  startAt?: string;
+  endAt?: string;
 
   eyebrow?: string;
   badge?: string;
 
-  title?: string;
+  title: string;
   accentTitle?: string;
 
   description?: string;
@@ -70,83 +54,14 @@ export type SitePromoContent = {
   imageAlt?: string;
   imagePosition?: string;
 
-  /*
-   * Kept in the type for future/admin compatibility.
-   * This lighter overlay intentionally does not render
-   * feature/highlight rows.
-   */
-  highlights?: string[];
-
   primaryCta?: PromoCta;
   secondaryCta?: PromoCta;
 
   note?: string;
-
-  frequency?: 'session';
 };
 
 type SitePromoOverlayProps = {
-  content?: SitePromoContent;
-};
-
-/* =========================================================
-   DEVELOPMENT CONTENT
-
-   Later this can come from NestJS / Admin.
-========================================================= */
-
-const initialPromoContent: SitePromoContent = {
-  id: 'harmony-signature-offer-v1',
-
-  enabled: true,
-
-  startAt: null,
-  endAt: null,
-
-  eyebrow: 'Harmony Special',
-
-  badge: 'Limited Offer',
-
-  title: 'A little extra',
-  accentTitle: 'for your next visit.',
-
-  description:
-    'Discover our current Harmony special for dining and celebrations.',
-
-  image:
-    '/images/menu/harmony-food-menu-bg.jpg',
-
-  imageAlt:
-    'Harmony dining special',
-
-  imagePosition: 'center',
-
-  highlights: [
-    'Curated dining',
-    'Celebration ready',
-    'Made for memorable moments',
-  ],
-
-  primaryCta: {
-    id: 'explore-offer',
-    label: 'Explore Offer',
-    href: '/menu',
-    enabled: true,
-    variant: 'primary',
-  },
-
-  secondaryCta: {
-    id: 'continue-site',
-    label: 'Maybe later',
-    href: '/',
-    enabled: true,
-    variant: 'secondary',
-  },
-
-  note:
-    'Offer details and availability are confirmed by Harmony staff.',
-
-  frequency: 'session',
+  content: SitePromoContent | null;
 };
 
 /* =========================================================
@@ -156,10 +71,6 @@ const initialPromoContent: SitePromoContent = {
 function isPromoActive(
   content: SitePromoContent,
 ) {
-  if (content.enabled === false) {
-    return false;
-  }
-
   const now = Date.now();
 
   if (content.startAt) {
@@ -196,19 +107,19 @@ function isPromoActive(
 ========================================================= */
 
 export default function SitePromoOverlay({
-  content = initialPromoContent,
+  content,
 }: SitePromoOverlayProps) {
   const [open, setOpen] =
     useState(false);
 
   const storageKey = useMemo(
     () =>
-      `harmony-site-promo-seen:${content.id}`,
-    [content.id],
+      `harmony-site-promo-seen:${content?.id ?? 'none'}`,
+    [content?.id],
   );
 
   const active = useMemo(
-    () => isPromoActive(content),
+    () => (content ? isPromoActive(content) : false),
     [content],
   );
 
@@ -267,7 +178,7 @@ export default function SitePromoOverlay({
     setOpen(false);
   }
 
-  if (!active) {
+  if (!content || !active) {
     return null;
   }
 
@@ -276,7 +187,6 @@ export default function SitePromoOverlay({
   ======================================================= */
 
   const showPrimary =
-    content.primaryCta?.enabled !== false &&
     Boolean(
       content.primaryCta?.label?.trim(),
     ) &&
@@ -284,12 +194,9 @@ export default function SitePromoOverlay({
       content.primaryCta?.href?.trim(),
     );
 
-  const showSecondary =
-    content.secondaryCta?.enabled !==
-      false &&
-    Boolean(
-      content.secondaryCta?.label?.trim(),
-    );
+  const showSecondary = Boolean(
+    content.secondaryCta?.label?.trim(),
+  );
 
   const hasDescription = Boolean(
     content.description?.trim(),

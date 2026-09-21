@@ -25,6 +25,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { SiteSettingsModule } from './site-settings/site-settings.module';
 import { HomepageModule } from './homepage/homepage.module';
 import { PageHeadersModule } from './page-headers/page-headers.module';
+import { SitePromoModule } from './site-promo/site-promo.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -101,6 +102,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     SiteSettingsModule,
     HomepageModule,
     PageHeadersModule,
+    SitePromoModule,
     NotificationsModule,
     MailModule,
     DashboardModule,

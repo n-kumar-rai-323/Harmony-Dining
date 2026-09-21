@@ -586,6 +586,20 @@ model PageHeader {
 }
 
 // ============================================================
+// SITE PROMO  (single admin-managed popup shown on public pages)
+// ============================================================
+
+model SitePromo {
+  key         String   @id
+  content     Json
+  isPublished Boolean  @default(false)
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("site_promos")
+}
+
+// ============================================================
 // NOTIFICATIONS
 // ============================================================
 

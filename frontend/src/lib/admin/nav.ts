@@ -7,6 +7,7 @@ import PhotoLibraryRoundedIcon from '@mui/icons-material/PhotoLibraryRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import WebRoundedIcon from '@mui/icons-material/WebRounded';
 import ViewCarouselRoundedIcon from '@mui/icons-material/ViewCarouselRounded';
+import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
@@ -39,6 +40,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: 'Events', href: '/admin/events', icon: CalendarMonthRoundedIcon, permission: 'events.read' },
   { label: 'Homepage', href: '/admin/homepage', icon: WebRoundedIcon, permission: 'homepage.read' },
   { label: 'Page Headers', href: '/admin/page-headers', icon: ViewCarouselRoundedIcon, permission: 'pageHeaders.read' },
+  { label: 'Site Promo', href: '/admin/site-promo', icon: LocalOfferRoundedIcon, permission: 'sitePromo.read' },
   { label: 'Site settings', href: '/admin/site-settings', icon: TuneRoundedIcon, permission: 'settings.read' },
   { label: 'Admin users', href: '/admin/users', icon: GroupRoundedIcon, permission: 'users.read' },
   { label: 'Audit log', href: '/admin/audit', icon: HistoryRoundedIcon, permission: 'audit.read' },

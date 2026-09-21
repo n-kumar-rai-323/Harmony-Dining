@@ -13,6 +13,7 @@ import ThemeInitScript from '@/theme/theme-init-script';
 import ThemeRegistry from '@/theme/theme-provider';
 import { env } from '@/lib/env';
 import { getSiteSettings } from '@/lib/api/site';
+import { getSitePromo } from '@/lib/api/site-promo';
 import { restaurantJsonLd } from '@/lib/seo/restaurant-jsonld';
 
 /* =========================================================
@@ -134,7 +135,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings = await getSiteSettings();
+  const [settings, promo] = await Promise.all([
+    getSiteSettings(),
+    getSitePromo(),
+  ]);
   const { social } = settings;
 
   return (
@@ -154,7 +158,7 @@ export default async function RootLayout({
         <ThemeInitScript />
 
         <ThemeRegistry>
-          <SiteChrome social={social} contact={settings.contact}>
+          <SiteChrome social={social} contact={settings.contact} promo={promo}>
             {children}
           </SiteChrome>
         </ThemeRegistry>
