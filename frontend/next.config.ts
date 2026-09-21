@@ -2,6 +2,13 @@ import type { NextConfig } from 'next';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
+// HSTS and upgrade-insecure-requests tell the browser to force HTTPS on this
+// origin. Only safe to send once the site is actually reachable over HTTPS —
+// sending them while running HTTP-only (e.g. before SSL/certbot is set up)
+// makes every link on the page unreachable (browser upgrades to a port
+// nothing is listening on).
+const isHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? '').startsWith('https://');
+
 /** Origins the browser talks to directly (admin panel + public form posts). */
 function apiOrigins(): string[] {
   const out = new Set<string>();
@@ -55,7 +62,7 @@ function contentSecurityPolicy(): string {
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],
   };
-  if (!isDev) directives['upgrade-insecure-requests'] = [];
+  if (!isDev && isHttps) directives['upgrade-insecure-requests'] = [];
 
   return Object.entries(directives)
     .map(([k, v]) => (v.length ? `${k} ${v.join(' ')}` : k))
@@ -88,10 +95,14 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(self), browsing-topics=()',
   },
-  {
-    key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload',
-  },
+  ...(isHttps
+    ? [
+        {
+          key: 'Strict-Transport-Security',
+          value: 'max-age=63072000; includeSubDomains; preload',
+        },
+      ]
+    : []),
 ];
 
 /**
