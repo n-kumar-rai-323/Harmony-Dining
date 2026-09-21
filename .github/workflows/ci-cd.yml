@@ -1,0 +1,104 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (typecheck, lint, e2e, build)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: harmony
+          POSTGRES_PASSWORD: harmony
+          POSTGRES_DB: harmony_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U harmony -d harmony_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://harmony:harmony@localhost:5432/harmony_ci?schema=public
+      SESSION_SECRET: ci-test-session-secret-not-used-in-prod
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - run: pnpm prisma:generate
+
+      - run: pnpm prisma migrate deploy
+
+      - run: pnpm test:e2e
+
+      - run: pnpm build
+
+  frontend:
+    name: Frontend (typecheck, lint, test, build)
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:4100/api
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - run: pnpm test
+
+      - run: pnpm build
+
+  deploy:
+    name: Deploy to production
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and redeploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/Harmony-Dining
+            git pull
+            sudo docker compose -f docker-compose.prod.yml up -d --build
+            sudo docker image prune -f
