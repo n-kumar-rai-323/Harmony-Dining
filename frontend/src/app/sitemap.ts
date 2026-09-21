@@ -3,6 +3,9 @@ import type { MetadataRoute } from 'next';
 import { getPastEventSlugs } from '@/lib/api/events';
 import { env } from '@/lib/env';
 
+// See frontend/src/app/layout.tsx for why this is forced dynamic.
+export const dynamic = 'force-dynamic';
+
 const ROUTES: Array<{
   path: string;
   changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'];
