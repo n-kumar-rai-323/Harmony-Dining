@@ -16,7 +16,7 @@ type ApiGetOptions = {
 };
 
 export function isApiConfigured(): boolean {
-  return env.apiUrl.length > 0;
+  return env.apiInternalUrl.length > 0;
 }
 
 export async function apiGet<T>(
@@ -25,7 +25,7 @@ export async function apiGet<T>(
 ): Promise<T | null> {
   if (!isApiConfigured()) return null;
 
-  const url = `${env.apiUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  const url = `${env.apiInternalUrl}${path.startsWith('/') ? path : `/${path}`}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 

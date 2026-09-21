@@ -42,6 +42,21 @@ export const env = {
   /** Base URL of the Harmony API. Empty until the backend is connected. */
   apiUrl: process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '') ?? '',
 
+  /**
+   * Base URL the SERVER uses to call the API for its own page rendering
+   * (Server Components, ISR revalidation). Set this to the backend's
+   * in-network address (e.g. `http://backend:4100/api` in Docker Compose) —
+   * a container reaching out to its own public domain/IP and back in often
+   * fails (cloud providers commonly don't support that NAT hairpin), which
+   * silently breaks every admin-edited page forever, not just slowly.
+   * Falls back to the public API URL for local dev, where there is no
+   * separate internal network.
+   */
+  apiInternalUrl:
+    process.env.API_INTERNAL_URL?.trim().replace(/\/$/, '') ??
+    process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '') ??
+    '',
+
   isProduction: process.env.NODE_ENV === 'production',
 } as const;
 

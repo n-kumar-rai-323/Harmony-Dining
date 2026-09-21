@@ -50,6 +50,11 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     restart: unless-stopped
+    environment:
+      # The server's OWN fetches (page rendering, ISR revalidation) go
+      # straight to the backend over the compose network — not out to the
+      # public domain and back in, which cloud NAT commonly blocks/breaks.
+      API_INTERNAL_URL: http://backend:4100/api
     depends_on:
       - backend
     expose:
