@@ -172,6 +172,13 @@ const nextConfig: NextConfig = {
     // Local-dev only: the media API is on localhost. Production media is a
     // real remote host and this stays false.
     dangerouslyAllowLocalIP: mediaIsLocal(),
+    // The image optimizer runs inside this same server and would otherwise
+    // fetch uploaded photos back through the site's own public domain —
+    // the same self-referencing request that breaks admin-content fetches
+    // (see lib/api/client.ts). Skipping optimization serves the uploaded
+    // file as-is (still fast: it's already behind nginx), trading automatic
+    // resize/avif-webp conversion for images always actually loading.
+    unoptimized: !isDev,
   },
 
   async headers() {
