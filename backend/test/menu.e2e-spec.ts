@@ -102,7 +102,7 @@ describe('Menu (e2e)', () => {
       .get('/api/public/menu')
       .expect(200);
     expect(Array.isArray(res.body.categories)).toBe(true);
-    expect(res.headers['cache-control']).toContain('s-maxage');
+    expect(res.headers['cache-control']).toContain('no-store');
   });
 
   it('rejects an item with no price / label / variant (400)', async () => {

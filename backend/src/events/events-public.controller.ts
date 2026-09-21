@@ -2,7 +2,9 @@ import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { Public } from '../common/decorators/public.decorator';
 import { EventsPublicService } from './events-public.service';
 
-const CACHE = 'public, max-age=60, s-maxage=300, stale-while-revalidate=600';
+// Admin edits must reach visitors immediately — no HTTP-level caching layer
+// (browser, proxy, or CDN) gets to hold a stale copy of admin-managed content.
+const CACHE = 'no-store';
 
 @Public()
 @Controller('public/events')

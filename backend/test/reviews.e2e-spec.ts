@@ -126,7 +126,7 @@ describe('Reviews (e2e)', () => {
     expect(featured.body.some((r: { id: string }) => r.id === row!.id)).toBe(
       false,
     );
-    expect(featured.headers['cache-control']).toContain('s-maxage');
+    expect(featured.headers['cache-control']).toContain('no-store');
   });
 
   it('rejects an out-of-range rating (400)', async () => {

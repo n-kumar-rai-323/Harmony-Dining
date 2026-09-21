@@ -118,7 +118,7 @@ describe('Homepage CMS (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/api/public/homepage')
       .expect(200);
-    expect(res.headers['cache-control']).toContain('s-maxage');
+    expect(res.headers['cache-control']).toContain('no-store');
     for (const key of KEYS) {
       expect(key in res.body).toBe(true);
     }

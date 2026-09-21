@@ -96,7 +96,7 @@ describe('Site settings (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/api/public/site')
       .expect(200);
-    expect(res.headers['cache-control']).toContain('s-maxage');
+    expect(res.headers['cache-control']).toContain('no-store');
     expect(res.body.business).toBeDefined();
     expect(Array.isArray(res.body.hours)).toBe(true);
     expect(Array.isArray(res.body.social)).toBe(true);
