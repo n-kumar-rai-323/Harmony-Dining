@@ -53,6 +53,8 @@ jobs:
 
       - run: pnpm prisma migrate deploy
 
+      - run: pnpm db:seed
+
       - run: pnpm test:e2e
 
       - run: pnpm build
