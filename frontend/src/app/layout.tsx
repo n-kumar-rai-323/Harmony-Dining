@@ -36,6 +36,12 @@ const cormorant = Cormorant_Garamond({
    GLOBAL SEO METADATA
 ========================================================= */
 
+// Every page depends on admin-managed content (site settings, page headers,
+// menu, etc.) fetched at request time. Forcing dynamic rendering means the
+// live site always reflects the current database — a build-time static
+// snapshot would otherwise get baked in permanently (see frontend/src/lib/api/client.ts).
+export const dynamic = 'force-dynamic';
+
 const SITE_NAME = 'Harmony Dining & Event Center';
 const SITE_DESCRIPTION =
   'Premium dining, events, reservations, and memorable experiences at Harmony Dining & Event Center.';

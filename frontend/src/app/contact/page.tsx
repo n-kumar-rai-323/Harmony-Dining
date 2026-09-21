@@ -23,6 +23,9 @@ import { getSiteSettings } from '@/lib/api/site';
 import { getPageHeaders } from '@/lib/api/page-headers';
 import ContactForm from '@/components/contact/contact-form';
 
+// See frontend/src/app/layout.tsx for why this is forced dynamic.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Contact',
   description:

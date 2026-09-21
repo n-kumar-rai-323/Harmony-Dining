@@ -19,6 +19,9 @@ import { getFeaturedReviews } from '@/lib/api/reviews';
 import { getHomepageContent } from '@/lib/api/homepage';
 import { getSiteSettings } from '@/lib/api/site';
 
+// See frontend/src/app/layout.tsx for why this is forced dynamic.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   description:
     'Harmony Dining & Event Center — premium dining, private events and celebrations. Explore the menu, browse the gallery and reserve your table.',

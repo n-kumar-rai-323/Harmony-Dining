@@ -4,6 +4,9 @@ import MenuExperience from '@/components/menu/menu-experience';
 import { getMenuCategories } from '@/lib/api/menu';
 import { getPageHeaders } from '@/lib/api/page-headers';
 
+// See frontend/src/app/layout.tsx for why this is forced dynamic.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Menu',
   description:

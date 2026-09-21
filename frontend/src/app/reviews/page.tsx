@@ -4,6 +4,9 @@ import ReviewsExperience from '@/components/reviews/reviews-experience';
 import { getPublishedReviews, getReviewStats } from '@/lib/api/reviews';
 import { getPageHeaders } from '@/lib/api/page-headers';
 
+// See frontend/src/app/layout.tsx for why this is forced dynamic.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Reviews',
   description:

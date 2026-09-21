@@ -3,6 +3,9 @@ import type { Metadata } from 'next';
 import ReservationExperience from '@/components/reservation/reservation-experience';
 import { getPageHeaders } from '@/lib/api/page-headers';
 
+// See frontend/src/app/layout.tsx for why this is forced dynamic.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Reserve a Table',
   description:

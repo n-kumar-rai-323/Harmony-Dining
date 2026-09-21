@@ -30,6 +30,9 @@ import {
 
 import FeatureIcon from '@/components/common/feature-icon';
 
+// See frontend/src/app/layout.tsx for why this is forced dynamic.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Events',
   description:
