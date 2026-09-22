@@ -107,4 +107,5 @@ jobs:
             cd ~/Harmony-Dining
             git pull
             sudo docker compose -f docker-compose.prod.yml up -d --build
+            sudo docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
             sudo docker image prune -f
