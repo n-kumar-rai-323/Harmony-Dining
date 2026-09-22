@@ -27,12 +27,10 @@ import ZoomInRoundedIcon from '@mui/icons-material/ZoomInRounded';
 import {
   getGalleryCategories,
   getGalleryCategoryLabel,
-  getGalleryItems,
   type GalleryCategory,
   type GalleryItem,
 } from '@/data/gallery';
 
-const fallbackGalleryItems = getGalleryItems();
 const categories = getGalleryCategories();
 
 /* =========================================================
@@ -49,10 +47,10 @@ export default function GalleryExperience({
 }: GalleryExperienceProps) {
   const theme = useTheme();
 
-  const galleryItems =
-    items && items.length > 0
-      ? items
-      : fallbackGalleryItems;
+  const galleryItems = useMemo(
+    () => items ?? [],
+    [items],
+  );
 
   const [
     category,

@@ -13,7 +13,6 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CollectionsRoundedIcon from '@mui/icons-material/CollectionsRounded';
 
 import PhotoCollage from '@/components/common/photo-collage';
-import { getHomeGalleryItems } from '@/data/gallery';
 
 /* =========================================================
    GALLERY SHOWCASE (home)
@@ -46,7 +45,7 @@ export type GalleryShowcasePhoto = {
 
 type GalleryShowcaseProps = {
   content?: GalleryShowcaseContent;
-  /** Preview photos, provided by the page from the API. Falls back to local. */
+  /** Preview photos, provided by the page from the API (published + featuredOnHome only). */
   photos?: GalleryShowcasePhoto[];
 };
 
@@ -76,13 +75,7 @@ export default function GalleryShowcase({
     cta,
   } = content;
 
-  const photos =
-    photosProp && photosProp.length > 0
-      ? photosProp
-      : getHomeGalleryItems(6).map((item) => ({
-          src: item.image,
-          alt: item.alt,
-        }));
+  const photos = photosProp ?? [];
 
   const hasCta =
     Boolean(cta?.label?.trim()) &&
