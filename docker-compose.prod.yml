@@ -110,6 +110,7 @@ services:
       # straight to the backend over the compose network — not out to the
       # public domain and back in, which cloud NAT commonly blocks/breaks.
       API_INTERNAL_URL: http://backend:4100/api
+      SITE_UNDER_DEVELOPMENT: ${SITE_UNDER_DEVELOPMENT:-false}
     depends_on:
       backend:
         condition: service_healthy
