@@ -1,0 +1,7 @@
+# Install with crontab after replacing paths and values. Route cron output to
+# your host's alert system; failed jobs must reach an operator.
+15 2 * * * cd /srv/Harmony-Dining && BACKUP_DIR=/srv/harmony-backups sh deploy/backup.sh
+45 3 * * 0 cd /srv/Harmony-Dining && sh deploy/restore-check.sh "$(find /srv/harmony-backups -mindepth 1 -maxdepth 1 -type d | sort | tail -1)"
+20 4 * * * cd /srv/Harmony-Dining && sh deploy/renew-tls.sh
+40 4 * * * cd /srv/Harmony-Dining && sh deploy/cleanup-sessions.sh
+*/5 * * * * cd /srv/Harmony-Dining && PUBLIC_URL=https://www.harmonydining.com.np sh deploy/check-health.sh

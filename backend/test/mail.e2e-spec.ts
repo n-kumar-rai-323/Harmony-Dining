@@ -11,6 +11,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { PasswordService } from '../src/auth/password.service';
 import { MailService } from '../src/mail/mail.service';
 import type { AppConfig } from '../src/config/configuration';
+import nodemailer, { type Transporter } from 'nodemailer';
 
 const OWNER = 'e2e.mail.owner@harmony.test';
 const STAFF = 'e2e.mail.staff@harmony.test';
@@ -128,5 +129,34 @@ describe('Mail module (e2e)', () => {
       .get('/api/admin/mail-logs?status=BOGUS')
       .set('Cookie', ownerCookie)
       .expect(400);
+  });
+  it('retries persisted failures after a worker restart and clears delivered content', async () => {
+    const sendMail = jest.fn().mockRejectedValueOnce(new Error('temporary SMTP failure'))
+      .mockResolvedValue({ messageId: 'test' });
+    const transport = jest.spyOn(nodemailer, 'createTransport').mockReturnValue({
+      sendMail, close: jest.fn(),
+    } as unknown as Transporter);
+    try {
+      const config = new ConfigService<AppConfig, true>({
+        mail: { driver: 'smtp', from: 'test@harmony.test',
+          smtp: { host: 'test', port: 587, secure: false, user: '', password: '' } },
+      });
+      const first = new MailService(config, prisma);
+      const sent = await first.send({ to: RCPT, template: 'generic' });
+      expect(sent.status).toBe('FAILED');
+      const failed = await prisma.mailLog.findUniqueOrThrow({ where: { id: sent.id } });
+      expect(failed.bodyHtml).toBeTruthy();
+      expect(failed.attempts).toBe(1);
+      await prisma.mailLog.update({ where: { id: sent.id }, data: { nextAttemptAt: new Date(0) } });
+      const restarted = new MailService(config, prisma);
+      await Promise.all([first.retryQueued(), restarted.retryQueued()]);
+      const retried = await prisma.mailLog.findUniqueOrThrow({ where: { id: sent.id } });
+      expect(retried.status).toBe('SENT');
+      expect(retried.attempts).toBe(2);
+      expect(retried.bodyHtml).toBeNull();
+      expect(sendMail.mock.calls.filter(([message]) => message.to === RCPT)).toHaveLength(2);
+      first.onModuleDestroy();
+      restarted.onModuleDestroy();
+    } finally { transport.mockRestore(); }
   });
 });

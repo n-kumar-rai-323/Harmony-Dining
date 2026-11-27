@@ -19,8 +19,8 @@ function optional(name: string, fallback: string): string {
 function int(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw === undefined || raw.trim() === '') return fallback;
-  const n = Number.parseInt(raw, 10);
-  if (Number.isNaN(n)) {
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n)) {
     throw new Error(`Environment variable ${name} must be an integer`);
   }
   return n;
@@ -29,7 +29,10 @@ function int(name: string, fallback: number): number {
 function bool(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
   if (raw === undefined || raw.trim() === '') return fallback;
-  return ['1', 'true', 'yes', 'on'].includes(raw.trim().toLowerCase());
+  const value = raw.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(value)) return true;
+  if (['0', 'false', 'no', 'off'].includes(value)) return false;
+  throw new Error(`${name} must be a boolean`);
 }
 
 export type SameSite = 'lax' | 'strict' | 'none';
@@ -86,6 +89,9 @@ export interface AppConfig {
 
 export function configuration(): AppConfig {
   const env = optional('NODE_ENV', 'development') as AppConfig['env'];
+  if (!['development', 'test', 'production'].includes(env)) {
+    throw new Error('NODE_ENV must be development, test, or production');
+  }
 
   const secret =
     env === 'production'
@@ -96,10 +102,56 @@ export function configuration(): AppConfig {
     throw new Error('SESSION_SECRET must be at least 24 characters');
   }
 
+  const sameSite = optional('SESSION_COOKIE_SAMESITE', 'lax');
+  if (!['lax', 'strict', 'none'].includes(sameSite)) {
+    throw new Error('Invalid SESSION_COOKIE_SAMESITE');
+  }
+  const secure = bool('SESSION_COOKIE_SECURE', env === 'production');
+  const mailDriver = optional('MAIL_DRIVER', 'log');
+  const storageDriver = optional('STORAGE_DRIVER', 'local');
+  if (!['log', 'smtp'].includes(mailDriver) || !['local', 's3'].includes(storageDriver)) {
+    throw new Error('Invalid mail or storage driver');
+  }
+  if (sameSite === 'none' && !secure) {
+    throw new Error('SameSite=none requires secure cookies');
+  }
+  if (env === 'production') {
+    if (mailDriver !== 'smtp') throw new Error('Production requires MAIL_DRIVER=smtp');
+    required('SMTP_HOST');
+    required('MAIL_FROM');
+    if (!secure || secret.length < 32 || /replace-with|dev-insecure/i.test(secret)) {
+      throw new Error('Production requires secure cookies and a unique SESSION_SECRET of at least 32 characters');
+    }
+    for (const name of ['API_PUBLIC_URL', 'CORS_ORIGINS']) {
+      for (const origin of required(name).split(',')) {
+        const url = new URL(origin.trim());
+        if (url.protocol !== 'https:' || url.username || url.password) {
+          throw new Error(`${name} must use HTTPS without credentials in production`);
+        }
+        if (name === 'CORS_ORIGINS' && url.origin !== origin.trim()) {
+          throw new Error('CORS_ORIGINS must contain origins without paths, queries, or trailing slashes');
+        }
+      }
+    }
+  }
+  for (const [name, fallback] of [
+    ['PORT', 4100], ['SESSION_TTL_HOURS', 12], ['THROTTLE_TTL_SECONDS', 60],
+    ['THROTTLE_LIMIT', 120], ['AUTH_THROTTLE_TTL_SECONDS', 300],
+    ['AUTH_THROTTLE_LIMIT', 10], ['SMTP_PORT', 587],
+  ] as const) {
+    const value = int(name, fallback);
+    if (value <= 0 || ((name === 'PORT' || name === 'SMTP_PORT') && value > 65535)) {
+      throw new Error(`${name} is out of range`);
+    }
+  }
+  if (storageDriver === 's3') {
+    for (const name of ['S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_PUBLIC_BASE_URL']) required(name);
+  }
+
   return {
     env,
-    port: int('PORT', 4000),
-    apiPublicUrl: optional('API_PUBLIC_URL', 'http://localhost:4000'),
+    port: int('PORT', 4100),
+    apiPublicUrl: optional('API_PUBLIC_URL', 'http://localhost:4100'),
     corsOrigins: optional('CORS_ORIGINS', 'http://localhost:3000')
       .split(',')
       .map((o) => o.trim())

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService, type AuditContext } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 import { paginate } from '../common/pagination';
 import type {
   CreateEventEnquiryDto,
@@ -53,6 +55,7 @@ export class EnquiriesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly mail: MailService,
   ) {}
 
   // ---------------- public ----------------
@@ -86,6 +89,13 @@ export class EnquiriesService {
           note: 'Submitted from the website',
         },
       });
+      if (row.email) {
+        await this.mail.enqueue({
+          to: row.email, template: 'enquiry_received',
+          context: { name: row.fullName, eventType: row.eventType, date: dto.preferredDate },
+          entityType: 'EventEnquiry', entityId: row.id,
+        }, tx);
+      }
       return row;
     });
 
@@ -216,10 +226,14 @@ export class EnquiriesService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const row = await tx.eventEnquiry.update({
-        where: { id },
+      const result = await tx.eventEnquiry.updateMany({
+        where: { id, status: current.status },
         data: { status: toStatus, handledById: ctx.actorId ?? null },
       });
+      if (result.count !== 1) {
+        throw new ConflictException('Enquiry changed. Refresh and try again.');
+      }
+      const row = await tx.eventEnquiry.findUniqueOrThrow({ where: { id } });
       await tx.eventEnquiryStatusHistory.create({
         data: {
           enquiryId: id,

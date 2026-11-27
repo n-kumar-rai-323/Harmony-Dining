@@ -1,15 +1,22 @@
 # Production stack for a single VPS.
 # Setup:
 #   1. cp .env.example .env               (fill in real values)
-#   2. cp backend/.env.example backend/.env.production   (fill in real values)
+#   2. cp backend/.env.production.example backend/.env.production (fill in real values)
 #   3. docker compose -f docker-compose.prod.yml up -d --build
 #
 # Postgres data and uploaded media live in named volumes, so they survive
 # `docker compose up --build` (a rebuild only replaces the app images, never
 # these volumes).
 
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '5'
+
 services:
   postgres:
+    logging: *logging
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -24,7 +31,42 @@ services:
       timeout: 5s
       retries: 10
 
+  migrate:
+    logging: *logging
+    build:
+      context: ./backend
+    restart: 'no'
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    command: ['true']
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  database-permissions:
+    logging: *logging
+    image: postgres:16-alpine
+    restart: 'no'
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      APP_DB_USER: ${APP_DB_USER:?Set APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD}
+    volumes:
+      - ./deploy/provision-db-role.sh:/provision-db-role.sh:ro
+      - ./deploy/verify-db-role.sh:/verify-db-role.sh:ro
+    command: ['sh', '/provision-db-role.sh']
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   backend:
+    logging: *logging
     build:
       context: ./backend
     restart: unless-stopped
@@ -33,17 +75,30 @@ services:
     environment:
       # Overrides env_file: the app talks to Postgres over the compose
       # network, not localhost, and media lives on the mounted volume below.
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      PGHOST: postgres
+      PGUSER: ${APP_DB_USER}
+      PGPASSWORD: ${APP_DB_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      RUN_MIGRATIONS: 'false'
       STORAGE_LOCAL_DIR: /app/storage/uploads
+      NODE_ENV: production
+      PORT: 4100
     volumes:
       - uploads-data:/app/storage/uploads
     depends_on:
-      postgres:
-        condition: service_healthy
+      database-permissions:
+        condition: service_completed_successfully
     expose:
       - '4100'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:4100/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
 
   frontend:
+    logging: *logging
     build:
       context: ./frontend
       args:
@@ -56,11 +111,13 @@ services:
       # public domain and back in, which cloud NAT commonly blocks/breaks.
       API_INTERNAL_URL: http://backend:4100/api
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     expose:
       - '3000'
 
   nginx:
+    logging: *logging
     image: nginx:alpine
     restart: unless-stopped
     ports:

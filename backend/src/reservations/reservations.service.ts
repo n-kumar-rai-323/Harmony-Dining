@@ -15,6 +15,7 @@ import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService, type AuditContext } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 import { paginate } from '../common/pagination';
 import type {
   CreateReservationDto,
@@ -55,6 +56,7 @@ export class ReservationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly mail: MailService,
   ) {}
 
   // ---------------- settings ----------------
@@ -270,6 +272,14 @@ export class ReservationsService {
           note: 'Submitted from the website',
         },
       });
+      if (created.email) {
+        await this.mail.enqueue({
+          to: created.email, template: 'reservation_received',
+          context: { name: created.fullName, reference: created.reference,
+            date: dto.date, time: created.time, guests: created.guests },
+          entityType: 'Reservation', entityId: created.id,
+        }, tx);
+      }
       return created;
     });
 
@@ -374,10 +384,14 @@ export class ReservationsService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const row = await tx.reservation.update({
-        where: { id },
+      const result = await tx.reservation.updateMany({
+        where: { id, status: current.status },
         data: { status: toStatus, handledById: ctx.actorId ?? null },
       });
+      if (result.count !== 1) {
+        throw new ConflictException('Reservation changed. Refresh and try again.');
+      }
+      const row = await tx.reservation.findUniqueOrThrow({ where: { id } });
       await tx.reservationStatusHistory.create({
         data: {
           reservationId: id,
