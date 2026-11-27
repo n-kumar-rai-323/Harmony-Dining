@@ -10,7 +10,7 @@ import SitePromoOverlay, {
   type SitePromoContent,
 } from '@/components/promotions/site-promo-overlay';
 import SocialFloatingBar from '@/components/layout/social-floating-bar';
-import UnderDevelopmentOverlay from '@/components/layout/under-development-overlay';
+import UnderDevelopmentBanner from '@/components/layout/under-development-banner';
 
 type SiteChromeProps = {
   social: SocialLink[];
@@ -38,12 +38,9 @@ export default function SiteChrome({
     return <>{children}</>;
   }
 
-  if (underDevelopment) {
-    return <UnderDevelopmentOverlay />;
-  }
-
   return (
     <>
+      {underDevelopment && <UnderDevelopmentBanner />}
       <SitePromoOverlay content={promo} />
 
       <Navbar />
