@@ -1,0 +1,41 @@
+name: Production containers
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate operations scripts
+        run: |
+          for script in deploy/*.sh; do sh -n "$script"; done
+      - name: Prepare isolated production configuration
+        run: |
+          cp .env.example .env
+          sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 24)/; s/^APP_DB_PASSWORD=.*/APP_DB_PASSWORD=$(openssl rand -hex 24)/" .env
+          cp backend/.env.example backend/.env.production
+          sed -i 's/^SESSION_SECRET=.*/SESSION_SECRET=container-smoke-unique-secret-1234567890/; s/^SESSION_COOKIE_SECURE=.*/SESSION_COOKIE_SECURE=true/; s|^API_PUBLIC_URL=.*|API_PUBLIC_URL=https://harmony.example|; s|^CORS_ORIGINS=.*|CORS_ORIGINS=https://harmony.example|; s/^MAIL_DRIVER=.*/MAIL_DRIVER=smtp/; s/^SMTP_HOST=.*/SMTP_HOST=smtp.example/' backend/.env.production
+          printf 'services:\n  nginx:\n    volumes:\n      - ./deploy/nginx/bootstrap.conf:/etc/nginx/conf.d/default.conf:ro\n' > compose.smoke.yml
+      - name: Build and start real images
+        run: docker compose -f docker-compose.prod.yml -f compose.smoke.yml up -d --build --wait --wait-timeout 180
+      - name: Verify API and non-root runtime
+        run: |
+          docker compose -f docker-compose.prod.yml exec -T backend node -e "if(process.getuid()===0)process.exit(1);fetch('http://localhost:4100/api/health/ready').then(r=>{if(!r.ok)process.exit(1)})"
+          docker compose -f docker-compose.prod.yml exec -T frontend node -e "if(process.getuid()===0)process.exit(1);fetch('http://localhost:3000').then(r=>{if(!r.ok)process.exit(1)})"
+          docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
+      - name: Verify restricted database privileges
+        run: |
+          sh deploy/verify-db-permissions.sh
+      - name: Exercise backup and restore
+        run: |
+          BACKUP_DIR="$RUNNER_TEMP/backups" sh deploy/backup.sh
+          sh deploy/restore-check.sh "$(find "$RUNNER_TEMP/backups" -mindepth 1 -maxdepth 1 -type d | head -1)"
+      - name: Diagnostics
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml logs --tail 100
+      - name: Stop isolated stack
+        if: always()
+        run: docker compose -f docker-compose.prod.yml -f compose.smoke.yml down -v

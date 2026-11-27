@@ -10,11 +10,13 @@ import SitePromoOverlay, {
   type SitePromoContent,
 } from '@/components/promotions/site-promo-overlay';
 import SocialFloatingBar from '@/components/layout/social-floating-bar';
+import UnderDevelopmentOverlay from '@/components/layout/under-development-overlay';
 
 type SiteChromeProps = {
   social: SocialLink[];
   contact: SiteContact;
   promo: SitePromoContent | null;
+  underDevelopment: boolean;
   children: React.ReactNode;
 };
 
@@ -22,12 +24,22 @@ type SiteChromeProps = {
  * Public-site chrome (nav, footer, floating social bar, promo overlay).
  * Suppressed under /admin, which ships its own shell.
  */
-export default function SiteChrome({ social, contact, promo, children }: SiteChromeProps) {
+export default function SiteChrome({
+  social,
+  contact,
+  promo,
+  underDevelopment,
+  children,
+}: SiteChromeProps) {
   const pathname = usePathname();
   const isAdmin = pathname === '/admin' || pathname?.startsWith('/admin/');
 
   if (isAdmin) {
     return <>{children}</>;
+  }
+
+  if (underDevelopment) {
+    return <UnderDevelopmentOverlay />;
   }
 
   return (

@@ -153,6 +153,11 @@ async function seedSuperAdmin(): Promise<void> {
     return;
   }
 
+  if (process.env.NODE_ENV === 'production' &&
+      (password.length < 16 || password === 'HarmonyAdmin2026' || email.endsWith('.example'))) {
+    throw new Error('Production seed requires a real administrator email and unique password of at least 16 characters');
+  }
+
   const existing = await prisma.adminUser.findUnique({ where: { email } });
   if (existing) {
     console.log(`  · super admin ${email} already exists — left unchanged.`);
@@ -843,8 +848,10 @@ async function main(): Promise<void> {
   await seedSingletons();
   await seedHomepage();
   await seedPageHeaders();
-  await seedGallery();
-  await seedEvents();
+  if (process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO_CONTENT === 'true') {
+    await seedGallery();
+    await seedEvents();
+  }
   console.log('Seed complete.');
 }
 

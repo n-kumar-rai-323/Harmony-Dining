@@ -30,6 +30,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SessionAuthGuard } from './auth/guards/session-auth.guard';
+import { OriginGuard } from './auth/guards/origin.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
@@ -112,6 +113,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     AppService,
     // Order matters: rate limit -> authenticate -> authorize.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: OriginGuard },
     { provide: APP_GUARD, useClass: SessionAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

@@ -5,14 +5,10 @@ WORKDIR /app
 RUN corepack enable
 
 # ---- dependencies (cached while package.json/pnpm-lock.yaml don't change) ----
-# pnpm refuses to run dependency postinstall scripts (esbuild, tailwind's
-# native oxide binary...) until they're approved; approve everything up
-# front since this is a controlled build, not an interactive dev machine.
+# Use the repository's explicit dependency build-script allowlist.
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --ignore-scripts && \
-    pnpm approve-builds --all && \
-    pnpm rebuild
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # ---- build ----
 # NEXT_PUBLIC_* vars are baked into the client bundle at build time, so they
@@ -32,6 +28,10 @@ ENV NODE_ENV=production
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+RUN mkdir -p .next/cache && chown -R node:node /app
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+USER node
 
 EXPOSE 3000
 CMD ["node", "server.js"]

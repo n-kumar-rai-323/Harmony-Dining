@@ -10,6 +10,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { PasswordService } from '../src/auth/password.service';
 import { ReservationsService } from '../src/reservations/reservations.service';
+import { MailService } from '../src/mail/mail.service';
 import type { AppConfig } from '../src/config/configuration';
 
 const OWNER = 'e2e.resv.owner@harmony.test';
@@ -156,6 +157,7 @@ describe('Reservations (e2e)', () => {
       .post('/api/public/reservations')
       .send({
         fullName: 'Availability Guest',
+        email: 'availability@harmony.test',
         phone: '9812345678',
         date,
         time: '19:00',
@@ -165,6 +167,9 @@ describe('Reservations (e2e)', () => {
     expect(created.body.reference).toMatch(/^HR-/);
     expect(created.body.status).toBe('PENDING');
     references.push(created.body.reference);
+    const row = await prisma.reservation.findUniqueOrThrow({ where: { reference: created.body.reference } });
+    const queued = await prisma.mailLog.findFirst({ where: { entityId: row.id, template: 'reservation_received' } });
+    expect(queued?.to).toBe('availability@harmony.test');
 
     const after = await request(app.getHttpServer())
       .get(`/api/public/reservations/availability?date=${date}`)
@@ -221,6 +226,42 @@ describe('Reservations (e2e)', () => {
       .post(`/api/admin/reservations/${id}/confirm`)
       .set('Cookie', staffCookie)
       .expect(400);
+  });
+
+  it('rolls back a booking when its acknowledgement cannot be persisted', async () => {
+    const enqueue = jest.spyOn(app.get(MailService), 'enqueue')
+      .mockRejectedValueOnce(new Error('outbox unavailable'));
+    try {
+      await expect(app.get(ReservationsService).createPublic({
+        fullName: 'Outbox rollback guest', phone: '9843000000',
+        email: 'rollback@harmony.test', date: daysAhead(22), time: '18:00', guests: 2,
+      }, { ip: null })).rejects.toThrow('outbox unavailable');
+      expect(await prisma.reservation.count({ where: { fullName: 'Outbox rollback guest' } })).toBe(0);
+    } finally { enqueue.mockRestore(); }
+  });
+
+  it('does not overwrite a concurrent terminal transition', async () => {
+    const service = app.get(ReservationsService);
+    const created = await service.createPublic({
+      fullName: 'Concurrent transition', phone: '9843000000',
+      date: daysAhead(21), time: '18:00', guests: 2,
+    }, { ip: null });
+    references.push(created.reference);
+    const row = await prisma.reservation.findUniqueOrThrow({
+      where: { reference: created.reference },
+    });
+    const results = await Promise.allSettled([
+      service.transition(row.id, 'REJECTED', undefined, {}),
+      service.transition(row.id, 'CANCELLED', undefined, {}),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+    const history = await prisma.reservationStatusHistory.findMany({
+      where: { reservationId: row.id, fromStatus: 'PENDING' },
+    });
+    expect(history).toHaveLength(1);
+    const final = await prisma.reservation.findUniqueOrThrow({ where: { id: row.id } });
+    expect(final.status).toBe(history[0].toStatus);
   });
 
   it('never overbooks a slot under concurrent requests', async () => {

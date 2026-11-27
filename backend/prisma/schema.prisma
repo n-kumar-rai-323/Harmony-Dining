@@ -208,6 +208,7 @@ model MenuItem {
   variants MenuItemVariant[]
 
   @@unique([categoryId, slug])
+  @@index([mediaId])
   @@index([status])
   @@index([isFeatured])
   @@index([categoryId, sortOrder])
@@ -255,6 +256,7 @@ model GalleryItem {
   deletedAt      DateTime?
 
   @@index([category, sortOrder])
+  @@index([mediaId])
   @@index([status])
   @@index([featuredOnHome])
   @@index([deletedAt])
@@ -298,6 +300,7 @@ model Event {
   media EventMedia[]
 
   @@index([status, eventDate])
+  @@index([coverMediaId])
   @@index([lifecycle])
   @@index([deletedAt])
   @@map("events")
@@ -316,6 +319,8 @@ model EventMedia {
   sortOrder      Int           @default(0)
 
   @@index([eventId, sortOrder])
+  @@index([mediaId])
+  @@index([posterMediaId])
   @@map("event_media")
 }
 
@@ -538,6 +543,7 @@ model ReviewPhoto {
   createdAt DateTime @default(now())
 
   @@index([reviewId, sortOrder])
+  @@index([mediaId])
   @@map("review_photos")
 }
 
@@ -663,8 +669,13 @@ model MailLog {
   entityId   String?
   createdAt  DateTime   @default(now())
   sentAt     DateTime?
+  // Persist rendered content for retries after process restarts. Cleared on success.
+  bodyHtml   String?
+  nextAttemptAt DateTime @default(now())
+  lockedUntil DateTime?
 
   @@index([status])
+  @@index([status, nextAttemptAt])
   @@index([createdAt])
   @@map("mail_logs")
 }

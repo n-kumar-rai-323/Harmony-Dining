@@ -3,6 +3,7 @@ import {
   HealthCheck,
   HealthCheckService,
   HealthIndicatorResult,
+  HealthCheckError,
   MemoryHealthIndicator,
 } from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,7 +40,9 @@ export class HealthController {
       await this.prisma.ping();
       return { database: { status: 'up' } };
     } catch {
-      return { database: { status: 'down' } };
+      throw new HealthCheckError('Database unavailable', {
+        database: { status: 'down' },
+      });
     }
   }
 }

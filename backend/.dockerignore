@@ -1,6 +1,8 @@
 node_modules
 dist
-storage
+storage/uploads
+!src/storage
+!src/storage/**
 coverage
 test
 *.md
